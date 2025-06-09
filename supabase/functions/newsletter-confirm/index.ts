@@ -1,4 +1,6 @@
+// @ts-ignore: Deno imports are valid in Supabase Edge Functions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore: ESM imports are valid in Supabase Edge Functions  
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,13 +9,16 @@ const corsHeaders = {
 };
 
 // Create a Supabase client with the Admin key
+// @ts-ignore: Deno is available in Supabase Edge Functions
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://aggkhetcdjmggqjzelgd.supabase.co";
+// @ts-ignore: Deno is available in Supabase Edge Functions
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Use placeholder for Brevo API key - replace with actual key in production
 const BREVO_API_KEY = "your-brevo-api-key-here";
 
+// @ts-ignore: Request type is available in Supabase Edge Functions
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
