@@ -145,13 +145,6 @@ Das Projekt nutzt mehrere Edge Functions:
 - **Newsletter-Archiv**: Vergangene Newsletter einsehen
 - **Abonnenten-Management**: E-Mail-Listen verwalten
 
-## 🚀 Deployment
-
-### Lovable Platform (Empfohlen)
-
-1. Projekt mit GitHub verbinden
-2. Auf "Publish" klicken
-3. Custom Domain optional konfigurieren
 
 ### Manuelles Deployment
 
@@ -219,11 +212,6 @@ npx supabase functions serve
 4. Push zum Branch (`git push origin feature/amazing-feature`)
 5. Öffne eine Pull Request
 
-## 📞 Support
-
-- **GitHub Issues**: Für Bugs und Feature Requests
-- **Discord**: [Lovable Community](https://discord.gg/lovable)
-- **Dokumentation**: [Lovable Docs](https://docs.lovable.dev/)
 
 ## 📄 Lizenz
 
@@ -231,7 +219,6 @@ Dieses Projekt ist unter der MIT Lizenz veröffentlicht. Siehe `LICENSE` Datei f
 
 ## 🙏 Danksagungen
 
-- **Lovable Platform**: Für die exzellente Development Experience
 - **Supabase**: Für Backend-as-a-Service
 - **Google Gemini**: Für KI-Capabilities
 - **The Decoder**: Für qualitativ hochwertige Tech-News
