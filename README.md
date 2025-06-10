@@ -28,7 +28,6 @@ Ein intelligentes Newsletter-System, das automatisch KI- und Tech-News sammelt, 
 - **UI Framework**: shadcn/ui, Tailwind CSS
 - **Backend**: Supabase (Database, Authentication, Edge Functions)
 - **KI-Integration**: Google Gemini API
-- **Deployment**: Lovable Platform
 - **Version Control**: Git/GitHub
 
 ## 📋 Voraussetzungen
