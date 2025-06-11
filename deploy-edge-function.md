@@ -1,3 +1,34 @@
+# 🚀 Edge Function Deployment Guide
+
+## Vollständiger Code für `gemini-ai` Edge Function
+
+Da die CLI Probleme hat, können Sie die Edge Function manuell über das Supabase Dashboard deployen:
+
+## ⚠️ **WICHTIG: API-Key Setup zuerst!**
+
+### **0. GEMINI_API_KEY konfigurieren** 
+**Bevor Sie die Edge Function deployen, stellen Sie sicher, dass der GEMINI_API_KEY gesetzt ist:**
+
+1. **Supabase Dashboard** → Ihr Projekt (`aggkhetcdjmggqjzelgd`)
+2. **Settings** → **Environment Variables** 
+3. **Prüfen Sie, ob `GEMINI_API_KEY` bereits existiert**
+4. **Falls nicht**: Fügen Sie ihn hinzu:
+   - **Name**: `GEMINI_API_KEY`
+   - **Value**: Ihr Google Gemini API Schlüssel
+   - **Scope**: Edge Functions
+
+### 1. **Supabase Dashboard öffnen**
+- Gehen Sie zu: https://supabase.com/dashboard
+- Wählen Sie Ihr Projekt aus
+- Navigieren Sie zu "Edge Functions"
+
+### 2. **gemini-ai Function bearbeiten**
+- Klicken Sie auf "gemini-ai" 
+- Oder erstellen Sie eine neue Function mit dem Namen "gemini-ai"
+
+### 3. **Folgenden Code einsetzen:**
+
+```typescript
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -38,11 +69,11 @@ serve(async (req) => {
       case 'generate-article-summary':
         return await generateArticleSummary(geminiApiKey, data);
       
-      case 'improve-article-title':
-        return await improveArticleTitle(geminiApiKey, data);
+      case 'relevance-score':
+        return await generateRelevanceScore(geminiApiKey, data);
       
-      case 'qa-with-newsletter':
-        return await qaWithNewsletter(geminiApiKey, data);
+      case 'explain-relevance-score':
+        return await explainRelevanceScore(geminiApiKey, data);
       
       default:
         return new Response(
@@ -120,7 +151,6 @@ async function generateSummary(apiKey: string, data: any) {
     );
   }
 
-  // Erstelle einen detaillierten, studentenorientierten Prompt basierend auf den tatsächlichen Artikeln
   const articleDetails = articlesToUse.map((article: any, index: number) => `
 **ARTIKEL ${index + 1}:**
 Titel: "${article.title}"
@@ -204,10 +234,10 @@ WICHTIG: Bleibe strikt bei den Inhalten der bereitgestellten Artikel. Erfinde ke
           }]
         }],
         generationConfig: {
-          temperature: 0.3, // Leicht erhöht für natürlicheren studentischen Stil
+          temperature: 0.3,
           topK: 30,
           topP: 0.9,
-          maxOutputTokens: 5000, // Erhöht für längere, detailliertere Inhalte
+          maxOutputTokens: 5000,
         }
       })
     });
@@ -230,7 +260,6 @@ WICHTIG: Bleibe strikt bei den Inhalten der bereitgestellten Artikel. Erfinde ke
       throw new Error("Gemini API hat leeren Inhalt zurückgegeben");
     }
     
-    // Add LinkedIn reference with student-friendly context if not present and linkedInPage is provided
     if (linkedInPage && !content.includes("linkedin.com/company/linkit-karlsruhe")) {
       content += `\n\n---\n\n**Bleibt connected! 🤝**\nFür weitere Updates, Diskussionen und Community-Events folgt uns auf [LinkedIn](${linkedInPage}). Dort teilen wir auch Infos zu Workshops, Gastvorträgen und Networking-Möglichkeiten!`;
     }
@@ -256,12 +285,9 @@ async function generateArticleSummary(apiKey: string, data: any) {
   const { article } = data;
   
   console.log('Generating summary for article:', article.title);
-  console.log('Article content available:', !!article.content);
-  console.log('Article description:', article.description?.substring(0, 100));
   
-  // Improved prompt for The Decoder articles with better content extraction
   const articleContent = article.content || article.description || 'Nur Titel verfügbar';
-  const cleanContent = articleContent.replace(/<[^>]*>/g, '').substring(0, 1000); // Remove HTML tags and limit length
+  const cleanContent = articleContent.replace(/<[^>]*>/g, '').substring(0, 1000);
   
   const prompt = `Du hilfst Studierenden einer KI und Data Science Hochschulgruppe beim Verstehen von tech-Artikeln von "The Decoder" und ähnlichen KI-News-Quellen. 
 
@@ -298,7 +324,7 @@ Stil: Faktisch korrekt, wissenschaftlich aber zugänglich, direkt und studentenf
           temperature: 0.3,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 300, // Increased for better summaries
+          maxOutputTokens: 300,
         }
       })
     });
@@ -315,7 +341,6 @@ Stil: Faktisch korrekt, wissenschaftlich aber zugänglich, direkt und studentenf
     }
 
     const summary = responseData.candidates[0].content.parts[0].text;
-    console.log('Generated summary:', summary.substring(0, 100));
 
     return new Response(
       JSON.stringify({ summary }), 
@@ -334,30 +359,169 @@ Stil: Faktisch korrekt, wissenschaftlich aber zugänglich, direkt und studentenf
   }
 }
 
-async function improveArticleTitle(apiKey: string, data: any) {
+async function generateRelevanceScore(apiKey: string, data: any) {
   const { article } = data;
   
-  console.log('Improving title for article:', article.title);
+  console.log('Generating ML/DS relevance score for article:', article.title);
   
-  const prompt = `Du hilfst dabei, Artikel-Titel für eine deutsche KI und Data Science Hochschulgruppe zu verbessern.
+  const articleContent = article.content || article.description || article.title;
+  const cleanContent = articleContent.replace(/<[^>]*>/g, '').substring(0, 1500);
+  
+  const prompt = `Du bewertest KI- und Data Science-Artikel für eine studentische ML/DS Hochschulgruppe.
 
-Verbessere den folgenden Artikel-Titel, damit er für deutsche KI/Data Science Studierende ansprechender und verständlicher wird:
+**AUFGABE:** Bewerte die Relevanz dieses Artikels für ML/Data Science Studierende auf einer Skala von 0-10.
 
-**Aktueller Titel:** ${article.title}
-**Quelle:** ${article.sourceName || 'Unbekannt'}
-**Link:** ${article.link}
-${article.description ? `**Beschreibung:** ${article.description.substring(0, 200)}...` : ''}
+**BEWERTUNGSKRITERIEN:**
+- **Sehr hoch (8-10):** Praktische Tutorials, neue Tools/Frameworks, kostenlose Ressourcen für Studenten, Karriere-relevante Trends, Competition/Kaggle-bezogen, Paper-Implementierungen
+- **Hoch (6-7):** Aktuelle ML/DS Entwicklungen, neue Modelle/Architekturen, Industry insights, Open-Source Projekte
+- **Mittel (4-5):** Allgemeine KI-News, Unternehmens-Announcements mit tech relevance, Research updates
+- **Niedrig (1-3):** Business/Investment-News, rein theoretische Inhalte ohne praktischen Bezug, nicht-tech-fokussierte Artikel
+- **Irrelevant (0):** Völlig unrelated zu ML/DS/KI
 
-**Aufgabe:**
-1. Erstelle einen verbesserten deutschen Titel (max. 80 Zeichen)
-2. Der Titel soll technisch korrekt aber studentenfreundlich sein
-3. Verwende klare, präzise Sprache ohne Clickbait
-4. Fokussiere auf die praktische Relevanz für KI/Data Science Studierende
-5. Behebe sprachliche Fehler oder unklare Formulierungen
+**FOKUS FÜR STUDENTEN:**
+- Praktische Anwendbarkeit im Studium
+- Kostenlose Tools und Ressourcen
+- Lernmaterialien und Tutorials
+- Karriere- und Skill-Entwicklung
+- Hands-on Projekte und Competitions
+- Open Source und Community-driven content
 
-**Stil:** Professionell aber zugänglich, direkt und informativ. Der Titel soll das Interesse wecken ohne zu übertreiben.
+**ARTIKEL ZU BEWERTEN:**
+Titel: "${article.title}"
+Quelle: "${article.sourceName || 'Unbekannt'}"
+Inhalt: "${cleanContent}"
 
-Antworte nur mit dem verbesserten Titel, ohne zusätzliche Erklärungen oder Anführungszeichen.`;
+**ANTWORT-FORMAT (JSON):**
+Gib NUR ein gültiges JSON-Objekt zurück mit:
+- score: number (0-10)
+- reasoning: string (kurze Begründung in 1-2 Sätzen)
+- student_priority: boolean (true wenn score >= 7)
+- categories: array of strings (z.B. ["tutorial", "tools", "career", "research", "free-resource"])
+
+Beispiel: {"score": 8, "reasoning": "Praktisches Tutorial für PyTorch mit direkter Anwendung in Studierenden-Projekten", "student_priority": true, "categories": ["tutorial", "tools"]}`;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          topK: 10,
+          topP: 0.8,
+          maxOutputTokens: 200,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(`Gemini API Fehler: ${response.status} - ${errorData?.error?.message || response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    
+    if (!responseData.candidates || !responseData.candidates[0] || !responseData.candidates[0].content || !responseData.candidates[0].content.parts || !responseData.candidates[0].content.parts[0]) {
+      throw new Error("Unerwartete Antwort von der Gemini API");
+    }
+
+    let aiResponse = responseData.candidates[0].content.parts[0].text;
+    
+    const jsonMatch = aiResponse.match(/\{.*\}/s);
+    if (jsonMatch) {
+      aiResponse = jsonMatch[0];
+    }
+    
+    let scoring;
+    try {
+      scoring = JSON.parse(aiResponse);
+    } catch (parseError) {
+      console.warn('Failed to parse AI response as JSON, using fallback scoring');
+      scoring = {
+        score: 5,
+        reasoning: "AI-Antwort konnte nicht geparst werden",
+        student_priority: false,
+        categories: ["unknown"],
+        raw_response: aiResponse
+      };
+    }
+
+    scoring.score = Math.max(0, Math.min(10, Number(scoring.score) || 0));
+    scoring.student_priority = scoring.score >= 7;
+    scoring.categories = Array.isArray(scoring.categories) ? scoring.categories : ["unknown"];
+    
+    console.log(`AI Relevance Score: ${scoring.score}/10 for "${article.title}"`);
+
+    return new Response(
+      JSON.stringify(scoring), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error("Error generating relevance score:", error);
+    
+    const fallbackScore = {
+      score: 3,
+      reasoning: `Fehler bei AI-Bewertung: ${error.message}`,
+      student_priority: false,
+      categories: ["error"],
+      error: true
+    };
+    
+    return new Response(
+      JSON.stringify(fallbackScore), 
+      { 
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+}
+
+async function explainRelevanceScore(apiKey: string, data: any) {
+  const { article } = data;
+  
+  console.log('Generating explanation for relevance score for article:', article.title);
+  
+  const articleContent = article.content || article.description || article.title;
+  const cleanContent = articleContent.replace(/<[^>]*>/g, '').substring(0, 1500);
+  
+  const prompt = `Erkläre detailliert die Relevanz dieses Artikels für ML/Data Science Studierende.
+
+**BEWERTUNGSKRITERIEN:**
+- **Sehr hoch (8-10):** Praktische Tutorials, neue Tools/Frameworks, kostenlose Ressourcen für Studenten, Karriere-relevante Trends, Competition/Kaggle-bezogen, Paper-Implementierungen
+- **Hoch (6-7):** Aktuelle ML/DS Entwicklungen, neue Modelle/Architekturen, Industry insights, Open-Source Projekte
+- **Mittel (4-5):** Allgemeine KI-News, Unternehmens-Announcements mit tech relevance, Research updates
+- **Niedrig (1-3):** Business/Investment-News, rein theoretische Inhalte ohne praktischen Bezug, nicht-tech-fokussierte Artikel
+- **Irrelevant (0):** Völlig unrelated zu ML/DS/KI
+
+**FOKUS FÜR STUDENTEN:**
+- Praktische Anwendbarkeit im Studium
+- Kostenlose Tools und Ressourcen
+- Lernmaterialien und Tutorials
+- Karriere- und Skill-Entwicklung
+- Hands-on Projekte und Competitions
+- Open Source und Community-driven content
+
+**ARTIKEL ZU ERKLÄREN:**
+Titel: "${article.title}"
+Quelle: "${article.sourceName || 'Unbekannt'}"
+Inhalt: "${cleanContent}"
+
+Erstelle eine ausführliche, studentenfreundliche Erklärung (3-4 Sätze), warum dieser Artikel für ML/Data Science Studenten relevant oder weniger relevant ist. Erkläre konkret:
+1. Welche Aspekte für Studenten nützlich sind
+2. Wie es im Studium angewendet werden kann
+3. Warum der Score gerechtfertigt ist
+4. Was Studenten daraus lernen können
+
+Schreibe im direkten, studentenfreundlichen Ton ("Das hilft euch bei...", "Für euer Studium bedeutet das...")`;
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -375,7 +539,7 @@ Antworte nur mit dem verbesserten Titel, ohne zusätzliche Erklärungen oder Anf
           temperature: 0.3,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 100,
+          maxOutputTokens: 400,
         }
       })
     });
@@ -391,73 +555,37 @@ Antworte nur mit dem verbesserten Titel, ohne zusätzliche Erklärungen oder Anf
       throw new Error("Unerwartete Antwort von der Gemini API");
     }
 
-    const improvedTitle = responseData.candidates[0].content.parts[0].text.trim();
-    console.log('Improved title generated:', improvedTitle.substring(0, 50));
+    const explanation = responseData.candidates[0].content.parts[0].text;
+    console.log('Generated explanation:', explanation.substring(0, 100));
 
     return new Response(
-      JSON.stringify({ improvedTitle }), 
+      JSON.stringify({ explanation }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error("Error improving article title:", error);
+    console.error("Error generating relevance score explanation:", error);
     return new Response(
       JSON.stringify({ error: error.message }), 
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 }
+```
 
-async function qaWithNewsletter(apiKey: string, data: any) {
-  const { question, newsletter } = data || {};
+### 4. **Deploy klicken**
+- Speichern und deployen Sie die Function
+- Die neue `explain-relevance-score` Action ist jetzt verfügbar
 
-  if (!question || !newsletter) {
-    return new Response(
-      JSON.stringify({ error: "question und newsletter sind Pflichtfelder" }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+## ✅ **Neue Funktionalität:**
 
-  const prompt = `Beantworte die Frage bezugnehmend auf: ${newsletter}
+- **Klickbare Scores** mit Info-Icon
+- **AI-generierte Erklärungen** für Score-Begründungen  
+- **Studentenspezifische Bewertungskriterien**
+- **Popup-Dialog** mit detaillierter Begründung
+- **Intelligente Sortierung** nach Relevanz-Score
 
-Die Frage lautet: ${question}
-
-Anweisungen:
-- Beziehe dich nur auf die Informationen aus dem bereitgestellten Newsletter-Inhalt
-- Antworte präzise und hilfreich auf Deutsch
-- Falls die Information nicht im Newsletter-Inhalt vorhanden ist, sage das ehrlich
-- Strukturiere deine Antwort klar und verständlich für Studierende
-- Verwende einen freundlichen, aber informativen Ton`;
-
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, topK: 40, topP: 0.95, maxOutputTokens: 2048 }
-      })
-    });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => null);
-      throw new Error(`Gemini API Fehler: ${response.status} - ${errData?.error?.message || response.statusText}`);
-    }
-
-    const respData = await response.json();
-    const content = respData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    return new Response(
-      JSON.stringify({ content }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error qa-with-newsletter:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
+Die Edge Function unterstützt jetzt die neue `explain-relevance-score` Action, die detaillierte, studentenfreundliche Erklärungen für die Score-Vergabe liefert! 

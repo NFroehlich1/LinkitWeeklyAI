@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Calendar, Send, Mail, User, Pencil } from "lucide-react";
+import { Calendar, Send, Mail, User, Pencil, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ReactMarkdown from 'react-markdown';
+import NewsletterArchiveService, { NewsletterArchiveEntry } from "@/services/NewsletterArchiveService";
+import { getCurrentWeek, getCurrentYear } from "@/utils/dateUtils";
 
 // Define a type for the newsletter
 type Newsletter = {
@@ -29,12 +33,62 @@ const NewsletterManagement = () => {
   
   // Newsletter content and sender details
   const [subject, setSubject] = useState<string>(`KI-Newsletter vom ${new Date().toLocaleDateString('de-DE')}`);
-  const [customContent, setCustomContent] = useState<string>("");
   const [senderName, setSenderName] = useState<string>("KI-Newsletter");
   const [senderEmail, setSenderEmail] = useState<string>("newsletter@decoderproject.com");
-  const [useCustomContent, setUseCustomContent] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState("basic");
   const [previewHtml, setPreviewHtml] = useState<string>("");
+  
+  // Archive-related state
+  const [archivedNewsletters, setArchivedNewsletters] = useState<NewsletterArchiveEntry[]>([]);
+  const [selectedArchiveId, setSelectedArchiveId] = useState<string>("");
+  const [newsletterContent, setNewsletterContent] = useState<string>("");
+  const [isLoadingArchive, setIsLoadingArchive] = useState(false);
+
+  const archiveService = new NewsletterArchiveService();
+
+  useEffect(() => {
+    loadArchivedNewsletters();
+  }, []);
+
+  const loadArchivedNewsletters = async () => {
+    setIsLoadingArchive(true);
+    try {
+      const newsletters = await archiveService.getNewsletters();
+      setArchivedNewsletters(newsletters);
+      
+      // Try to find and pre-select current week's newsletter
+      const currentWeek = getCurrentWeek();
+      const currentYear = getCurrentYear();
+      
+      const currentWeekNewsletter = newsletters.find(
+        n => n.week_number === currentWeek && n.year === currentYear
+      );
+      
+      if (currentWeekNewsletter) {
+        setSelectedArchiveId(currentWeekNewsletter.id);
+        setNewsletterContent(currentWeekNewsletter.content);
+        setSubject(`LINKIT WEEKLY - KW ${currentWeek}/${currentYear}`);
+        console.log(`✅ Pre-selected current week newsletter: KW ${currentWeek}/${currentYear}`);
+      } else {
+        console.log(`📅 No newsletter found for current week: KW ${currentWeek}/${currentYear}`);
+      }
+    } catch (error) {
+      console.error("Fehler beim Laden der archivierten Newsletter:", error);
+      toast.error("Newsletter-Archiv konnte nicht geladen werden.");
+    } finally {
+      setIsLoadingArchive(false);
+    }
+  };
+
+  const handleArchiveSelection = (archiveId: string) => {
+    const selectedNewsletter = archivedNewsletters.find(n => n.id === archiveId);
+    if (selectedNewsletter) {
+      setSelectedArchiveId(archiveId);
+      setNewsletterContent(selectedNewsletter.content);
+      setSubject(selectedNewsletter.title);
+      console.log(`📰 Selected newsletter: ${selectedNewsletter.title}`);
+    }
+  };
 
   const loadSubscriberCount = async () => {
     setIsLoadingSubscribers(true);
@@ -55,34 +109,21 @@ const NewsletterManagement = () => {
   };
 
   const generatePreview = () => {
-    let content = "";
-    
-    if (useCustomContent && customContent) {
-      content = customContent;
+    if (newsletterContent) {
+      console.log("✅ Generating preview with markdown content");
+      setPreviewHtml(newsletterContent);
     } else {
-      content = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">${senderName}</h1>
-          <p>Willkommen zu unserem wöchentlichen KI-Newsletter.</p>
-          <p>Hier sind die wichtigsten Neuigkeiten aus der Welt der Künstlichen Intelligenz:</p>
-          <ul>
-            <li>GPT-5 soll in den nächsten Monaten erscheinen</li>
-            <li>Google stellt neue KI-Funktionen für Workspace vor</li>
-            <li>EU einigt sich auf KI-Regulierung</li>
-          </ul>
-          <p style="margin-top: 30px; font-size: 14px; color: #777;">
-            Sie erhalten diesen Newsletter, weil Sie sich dafür angemeldet haben. 
-            <a href="#" style="color: #777;">Hier abmelden</a>
-          </p>
-        </div>
-      `;
+      setPreviewHtml("");
     }
-    
-    setPreviewHtml(content);
     setActiveTab("preview");
   };
 
   const handleSendNewsletter = async () => {
+    if (!newsletterContent) {
+      toast.error("Bitte wählen Sie einen Newsletter-Inhalt aus dem Archiv aus.");
+      return;
+    }
+
     setIsSending(true);
     try {
       // Prepare data to send
@@ -90,7 +131,7 @@ const NewsletterManagement = () => {
         subject,
         senderName,
         senderEmail,
-        customContent: useCustomContent ? customContent : null
+        customContent: newsletterContent
       };
 
       const response = await supabase.functions.invoke("newsletter-send", {
@@ -105,9 +146,6 @@ const NewsletterManagement = () => {
       
       if (data.success) {
         toast.success(`Newsletter wurde an ${data.emailsSent} Abonnenten verarbeitet!`);
-        
-        // The edge function now handles storing the newsletter in the database
-        // so we don't need to do it here anymore
       } else {
         throw new Error(data.message || "Unbekannter Fehler");
       }
@@ -125,14 +163,14 @@ const NewsletterManagement = () => {
       <CardHeader>
         <CardTitle>Newsletter-Verwaltung</CardTitle>
         <CardDescription>
-          Verwalten Sie Ihre Newsletter-Einstellungen und versenden Sie Newsletter.
+          Verwalten Sie Ihre Newsletter-Einstellungen und versenden Sie Newsletter aus dem Archiv.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3 w-full mb-4">
             <TabsTrigger value="basic">Grundeinstellungen</TabsTrigger>
-            <TabsTrigger value="content">Newsletter-Inhalt</TabsTrigger>
+            <TabsTrigger value="content">Newsletter-Auswahl</TabsTrigger>
             <TabsTrigger value="preview">Vorschau</TabsTrigger>
           </TabsList>
           
@@ -212,33 +250,39 @@ const NewsletterManagement = () => {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   className="pl-9"
-                  placeholder="KI-Newsletter vom DD.MM.YYYY"
+                  placeholder="LINKIT WEEKLY - KW XX/YYYY"
                 />
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox" 
-                id="use-custom-content"
-                checked={useCustomContent}
-                onChange={(e) => setUseCustomContent(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <Label htmlFor="use-custom-content" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Benutzerdefinierten Inhalt verwenden
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="archive-selection">Newsletter aus Archiv auswählen</Label>
+              <div className="flex-1 relative">
+                <Archive className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Select value={selectedArchiveId} onValueChange={handleArchiveSelection}>
+                  <SelectTrigger className="pl-9">
+                    <SelectValue placeholder={isLoadingArchive ? "Lade Archiv..." : "Newsletter auswählen"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {archivedNewsletters.map((newsletter) => (
+                      <SelectItem key={newsletter.id} value={newsletter.id}>
+                        {newsletter.title} ({newsletter.date_range})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            {useCustomContent && (
+            {newsletterContent && (
               <div className="space-y-2">
-                <Label htmlFor="email-content">Newsletter-Inhalt (HTML unterstützt)</Label>
+                <Label htmlFor="newsletter-content">Ausgewählter Newsletter-Inhalt</Label>
                 <Textarea
-                  id="email-content"
-                  value={customContent}
-                  onChange={(e) => setCustomContent(e.target.value)}
-                  className="min-h-[200px]"
-                  placeholder="<p>Hier können Sie den Inhalt Ihres Newsletters eingeben...</p>"
+                  id="newsletter-content"
+                  value={newsletterContent}
+                  onChange={(e) => setNewsletterContent(e.target.value)}
+                  className="min-h-[300px] font-mono text-sm"
+                  placeholder="Newsletter-Inhalt wird hier angezeigt..."
                 />
               </div>
             )}
@@ -247,6 +291,7 @@ const NewsletterManagement = () => {
               onClick={generatePreview}
               variant="outline"
               className="w-full mt-4"
+              disabled={!newsletterContent}
             >
               Vorschau generieren
             </Button>
@@ -259,10 +304,54 @@ const NewsletterManagement = () => {
                 <div className="text-sm text-muted-foreground mb-4">
                   Von: {senderName} &lt;{senderEmail}&gt;
                 </div>
-                <div 
-                  className="newsletter-body"
-                  dangerouslySetInnerHTML={{ __html: previewHtml || "Klicken Sie auf 'Vorschau generieren', um eine Vorschau zu sehen." }}
-                />
+                <div className="newsletter-preview bg-white p-6 rounded-md border">
+                  {previewHtml ? (
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({children}) => <h1 className="text-2xl font-bold mb-4 text-gray-900">{children}</h1>,
+                          h2: ({children}) => <h2 className="text-xl font-semibold mb-3 mt-6 text-gray-800">{children}</h2>,
+                          h3: ({children}) => <h3 className="text-lg font-medium mb-2 mt-4 text-gray-700">{children}</h3>,
+                          p: ({children}) => <p className="mb-3 text-gray-600 leading-relaxed">{children}</p>,
+                          a: ({children, href}) => (
+                            <a 
+                              href={href} 
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          ul: ({children}) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
+                          ol: ({children}) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
+                          li: ({children}) => <li className="text-gray-600">{children}</li>,
+                          strong: ({children}) => <strong className="font-semibold text-gray-800">{children}</strong>,
+                          em: ({children}) => <em className="italic text-gray-700">{children}</em>,
+                          blockquote: ({children}) => (
+                            <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">
+                              {children}
+                            </blockquote>
+                          ),
+                        }}
+                      >
+                        {previewHtml}
+                      </ReactMarkdown>
+                      <div className="mt-8 pt-6 border-t border-gray-200">
+                        <p className="text-sm text-gray-500">
+                          Sie erhalten diesen Newsletter, weil Sie sich dafür angemeldet haben. 
+                          <a href="#" className="text-gray-500 hover:text-gray-700 underline ml-1">
+                            Hier abmelden
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">
+                      Bitte wählen Sie einen Newsletter aus und klicken Sie auf 'Vorschau generieren'.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -272,7 +361,7 @@ const NewsletterManagement = () => {
         <Button 
           className="w-full" 
           onClick={handleSendNewsletter}
-          disabled={isSending}
+          disabled={isSending || !newsletterContent}
         >
           <Send className="mr-2 h-4 w-4" />
           {isSending ? "Newsletter wird gesendet..." : "Newsletter jetzt senden"}

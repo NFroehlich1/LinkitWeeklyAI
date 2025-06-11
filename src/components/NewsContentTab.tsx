@@ -25,7 +25,6 @@ const NewsContentTab = ({ newsService }: NewsContentTabProps) => {
     unprocessed: number;
   } | null>(null);
 
-  // Automatically load news on component mount
   useEffect(() => {
     if (newsService) {
       loadNews();
@@ -69,11 +68,9 @@ const NewsContentTab = ({ newsService }: NewsContentTabProps) => {
       
       setLoadingStatus("Erstelle Wochenübersicht...");
       
-      // Group by week
       const weeklyDigests = newsService.groupNewsByWeek(news);
       setAllNews(weeklyDigests);
       
-      // Set current week digest
       const currentWeekKey = Object.keys(weeklyDigests).sort().reverse()[0];
       if (currentWeekKey) {
         const currentDigest = weeklyDigests[currentWeekKey];
@@ -83,7 +80,6 @@ const NewsContentTab = ({ newsService }: NewsContentTabProps) => {
         console.log(`Current week digest: ${currentDigest.items.length} articles`);
         console.log(`Total digests created: ${Object.keys(weeklyDigests).length}`);
         
-        // Success message
         const currentWeekArticles = currentDigest.items.length;
         toast.success(`${currentWeekArticles} Artikel erfolgreich geladen`);
         
@@ -92,7 +88,6 @@ const NewsContentTab = ({ newsService }: NewsContentTabProps) => {
         setCurrentWeekDigest(null);
       }
       
-      // Reload stats after fetching new articles
       await loadArticleStats();
       
     } catch (error) {

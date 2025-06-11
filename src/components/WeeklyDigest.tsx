@@ -8,8 +8,9 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from 'react-markdown';
 import NewsletterSubscribeModal from "./NewsletterSubscribeModal";
-import ArticleSelector from "./ArticleSelector";
-import { Calendar, FileEdit, Mail, RefreshCw, TrendingUp, Archive, CheckCircle, AlertTriangle, Save, Zap } from "lucide-react";
+import ArticleRanking from "./ArticleRanking";
+import NewsletterAskAbout from "./NewsletterAskAbout";
+import { Calendar, FileEdit, Mail, RefreshCw, TrendingUp, Archive, CheckCircle, AlertTriangle, Save, Zap, Star, MessageSquare } from "lucide-react";
 import NewsService from "@/services/NewsService";
 import NewsletterArchiveService from "@/services/NewsletterArchiveService";
 
@@ -31,9 +32,44 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
   const [savedToArchive, setSavedToArchive] = useState<boolean>(false);
   const [archiveSaveError, setArchiveSaveError] = useState<string | null>(null);
   const [isAutoGenerating, setIsAutoGenerating] = useState<boolean>(false);
+  const [improvedTitles, setImprovedTitles] = useState<Record<string, string>>({});
+  const [currentDigest, setCurrentDigest] = useState<WeeklyDigestType>(digest);
+  const [showAllArticles, setShowAllArticles] = useState<boolean>(false);
   
   const getArticleId = (article: RssItem): string => {
     return article.guid || article.link;
+  };
+  
+  const calculateRelevanceScore = (article: RssItem): number => {
+    let score = 0;
+    
+    const relevantKeywords = [
+      'KI', 'AI', 'künstliche intelligenz', 'machine learning', 'deep learning',
+      'chatgpt', 'openai', 'google', 'microsoft', 'meta', 'tesla', 'nvidia',
+      'startup', 'tech', 'innovation', 'digitalisierung', 'automation',
+      'robotik', 'algorithmus', 'daten', 'software', 'hardware'
+    ];
+    
+    const titleLower = article.title.toLowerCase();
+    const descLower = (article.description || '').toLowerCase();
+    
+    relevantKeywords.forEach(keyword => {
+      if (titleLower.includes(keyword.toLowerCase())) score += 3;
+      if (descLower.includes(keyword.toLowerCase())) score += 1;
+    });
+    
+    const daysOld = Math.floor((Date.now() - new Date(article.pubDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysOld <= 1) score += 5;
+    else if (daysOld <= 3) score += 3;
+    else if (daysOld <= 7) score += 1;
+    
+    if (article.sourceName === 'Eigener') score += 2;
+    
+    const reliableSources = ['techcrunch', 'wired', 'ars technica', 'the verge'];
+    const sourceLower = (article.sourceName || '').toLowerCase();
+    if (reliableSources.some(source => sourceLower.includes(source))) score += 2;
+    
+    return Math.max(score, 1);
   };
   
   const getUniqueArticles = (articles: RssItem[]): RssItem[] => {
@@ -41,12 +77,58 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
     
     articles.forEach(article => {
       const id = getArticleId(article);
+      const articleWithImprovedTitle = {
+        ...article,
+        title: improvedTitles[id] || article.title
+      };
       if (!uniqueMap.has(id)) {
-        uniqueMap.set(id, article);
+        uniqueMap.set(id, articleWithImprovedTitle);
       }
     });
     
     return Array.from(uniqueMap.values());
+  };
+
+  const getTop10Articles = (): RssItem[] => {
+    const uniqueArticles = getUniqueArticles(currentDigest.items);
+    return uniqueArticles
+      .map(article => ({
+        ...article,
+        relevanceScore: calculateRelevanceScore(article)
+      }))
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 10);
+  };
+
+  const handleTitleImproved = (article: RssItem, newTitle: string) => {
+    const articleId = getArticleId(article);
+    setImprovedTitles(prev => ({
+      ...prev,
+      [articleId]: newTitle
+    }));
+  };
+
+  const handleDeleteArticle = (articleToDelete: RssItem) => {
+    const articleId = getArticleId(articleToDelete);
+    
+    const updatedDigest = {
+      ...currentDigest,
+      items: currentDigest.items.filter(item => getArticleId(item) !== articleId)
+    };
+    setCurrentDigest(updatedDigest);
+    
+    if (selectedArticles) {
+      const updatedSelected = selectedArticles.filter(item => getArticleId(item) !== articleId);
+      setSelectedArticles(updatedSelected.length > 0 ? updatedSelected : null);
+    }
+    
+    setImprovedTitles(prev => {
+      const updated = { ...prev };
+      delete updated[articleId];
+      return updated;
+    });
+    
+    toast.success("Artikel aus der Übersicht entfernt");
   };
   
   const saveToArchive = async (content: string): Promise<boolean> => {
@@ -64,7 +146,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
         return false;
       }
       
-      if (!digest || !digest.weekNumber || !digest.year) {
+      if (!currentDigest || !currentDigest.weekNumber || !currentDigest.year) {
         const error = "Digest-Informationen sind unvollständig";
         console.error(error);
         setArchiveSaveError(error);
@@ -72,10 +154,10 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
         return false;
       }
       
-      console.log(`Saving newsletter for week ${digest.weekNumber}/${digest.year}...`);
+      console.log(`Saving newsletter for week ${currentDigest.weekNumber}/${currentDigest.year}...`);
       
       const archiveService = new NewsletterArchiveService();
-      const result = await archiveService.saveNewsletter(digest, content);
+      const result = await archiveService.saveNewsletter(currentDigest, content);
       
       if (result && result.id) {
         console.log("✅ Newsletter successfully saved to archive:", result.id);
@@ -117,15 +199,11 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
       const serviceToUse = newsService || new NewsService();
       const linkedInPage = "https://www.linkedin.com/company/linkit-karlsruhe/posts/?feedView=all";
       
-      let articlesToUse = getUniqueArticles(digest.items);
-      if (selectedArticles && selectedArticles.length > 0) {
-        articlesToUse = getUniqueArticles(selectedArticles);
-      }
-      
-      console.log(`Generating newsletter with ${articlesToUse.length} articles`);
+      let articlesToUse = selectedArticles || getTop10Articles();
+      console.log(`Generating newsletter with ${articlesToUse.length} articles (${selectedArticles ? 'selected' : 'top 10 by relevance'})`);
       
       const summary = await serviceToUse.generateNewsletterSummary(
-        digest, 
+        currentDigest, 
         articlesToUse,
         linkedInPage
       );
@@ -135,6 +213,12 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
         setGeneratedContent(summary);
         setActiveTab("summary");
         toast.success("Newsletter erfolgreich generiert!");
+        
+        console.log("🔄 Automatically saving to archive...");
+        const saveSuccess = await saveToArchive(summary);
+        if (saveSuccess) {
+          console.log("✅ Newsletter automatically saved to archive");
+        }
       } else {
         throw new Error("Newsletter-Generierung hat leeren Inhalt zurückgegeben");
       }
@@ -190,6 +274,9 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
 
   const startArticleSelection = () => {
     setIsSelecting(true);
+    if (!selectedArticles) {
+      setSelectedArticles(getTop10Articles());
+    }
   };
   
   const completeArticleSelection = (articles: RssItem[]) => {
@@ -205,12 +292,22 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
   const cancelArticleSelection = () => {
     setIsSelecting(false);
   };
+
+  const handleSelectionChange = (articles: RssItem[]) => {
+    setSelectedArticles(articles);
+  };
   
   const getDisplayArticles = () => {
     if (selectedArticles && selectedArticles.length > 0) {
       return selectedArticles;
     }
-    return getUniqueArticles(digest.items);
+    
+    // Zeige entweder alle Artikel oder nur Top 10 basierend auf showAllArticles
+    if (showAllArticles) {
+      return getUniqueArticles(currentDigest.items);
+    } else {
+      return getTop10Articles();
+    }
   };
   
   const displayArticles = getDisplayArticles();
@@ -227,10 +324,19 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                 </div>
                 <div>
                   <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-                    📬 LINKIT WEEKLY KW {digest.weekNumber}
+                    📬 LINKIT WEEKLY KW {currentDigest.weekNumber}
                   </CardTitle>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-gray-600 mt-1">
-                    <span className="font-medium">{digest.dateRange}</span>
+                    <span className="font-medium">{currentDigest.dateRange}</span>
+                    {selectedArticles ? (
+                      <span className="inline-flex px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                        {selectedArticles.length} ausgewählte Artikel
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                        Top 10 relevanteste Artikel
+                      </span>
+                    )}
                     {isSaving && (
                       <div className="flex items-center gap-1 text-blue-600">
                         <Archive className="h-3 w-3 animate-pulse" />
@@ -257,31 +363,19 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
             <div className="flex flex-wrap gap-2">
               <NewsletterSubscribeModal newsletterContent={generatedContent || undefined} />
               
-              {selectedArticles && selectedArticles.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  onClick={startArticleSelection} 
-                  className="gap-2 bg-white hover:bg-blue-50 border-blue-200 text-blue-700"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span className="hidden sm:inline">{selectedArticles.length} ausgewählt</span>
-                  <span className="sm:hidden">{selectedArticles.length}</span>
-                </Button>
-              )}
-              
               {!isSelecting ? (
                 <>
-                  {!selectedArticles && (
-                    <Button 
-                      variant="outline"
-                      onClick={startArticleSelection} 
-                      className="gap-2 bg-white hover:bg-green-50 border-green-200 text-green-700"
-                    >
-                      <FileEdit className="h-4 w-4" />
-                      <span className="hidden sm:inline">Artikel auswählen</span>
-                      <span className="sm:hidden">Auswählen</span>
-                    </Button>
-                  )}
+                  <Button 
+                    variant="outline"
+                    onClick={startArticleSelection} 
+                    className="gap-2 bg-white hover:bg-green-50 border-green-200 text-green-700"
+                  >
+                    <Star className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {selectedArticles ? 'Artikel bearbeiten' : 'Top 10 bearbeiten'}
+                    </span>
+                    <span className="sm:hidden">Bearbeiten</span>
+                  </Button>
                   
                   <Button 
                     onClick={handleAutomaticGeneration} 
@@ -362,14 +456,16 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
         
         <CardContent className="p-4 sm:p-6">
           {isSelecting ? (
-            <ArticleSelector 
-              articles={getUniqueArticles(digest.items)} 
-              onSubmit={completeArticleSelection}
+            <ArticleRanking 
+              articles={getUniqueArticles(currentDigest.items)} 
+              selectedArticles={selectedArticles || getTop10Articles()}
+              onSelectionChange={handleSelectionChange}
+              onConfirm={completeArticleSelection}
               onCancel={cancelArticleSelection}
             />
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
+              <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100">
                 <TabsTrigger 
                   value="news" 
                   className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-primary"
@@ -386,6 +482,14 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                   <Mail className="h-4 w-4" />
                   Newsletter
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="ask" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-primary"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Fragen</span>
+                  <span className="sm:hidden">Q&A</span>
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="news" className="mt-0">
@@ -395,19 +499,50 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                   </div>
                 ) : displayArticles.length > 0 ? (
                   <div className="space-y-4">
-                    {selectedArticles && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600 pb-4 border-b">
-                        <FileEdit className="h-4 w-4 text-blue-500" />
-                        <span className="hidden sm:inline">{selectedArticles.length} ausgewählte Artikel</span>
-                        <span className="sm:hidden">{selectedArticles.length} ausgewählt</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 text-sm text-gray-600 pb-4 border-b">
+                      <Star className="h-4 w-4 text-blue-500" />
+                      <span className="hidden sm:inline">
+                        {selectedArticles 
+                          ? `${selectedArticles.length} ausgewählte Artikel für Newsletter` 
+                          : showAllArticles
+                            ? `Alle ${displayArticles.length} Artikel`
+                            : `Top ${displayArticles.length} relevanteste Artikel (automatisch ausgewählt)`
+                        }
+                      </span>
+                      <span className="sm:hidden">
+                        {selectedArticles ? `${selectedArticles.length} ausgewählt` : showAllArticles ? `Alle ${displayArticles.length}` : `Top ${displayArticles.length}`}
+                      </span>
+                      
+                      {/* Toggle Buttons für Ansicht */}
+                      {!selectedArticles && (
+                        <div className="ml-auto flex gap-1">
+                          <Button
+                            variant={!showAllArticles ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setShowAllArticles(false)}
+                            className="text-xs h-7"
+                          >
+                            Top 10
+                          </Button>
+                          <Button
+                            variant={showAllArticles ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setShowAllArticles(true)}
+                            className="text-xs h-7"
+                          >
+                            Alle Artikel
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                       {displayArticles.map((item, index) => (
                         <NewsCard 
                           key={`${getArticleId(item)}-${index}`}
                           item={item}
+                          onTitleImproved={handleTitleImproved}
+                          onDelete={handleDeleteArticle}
                         />
                       ))}
                     </div>
@@ -482,6 +617,13 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     <Skeleton className="h-32 w-full" />
                   </div>
                 )}
+              </TabsContent>
+              
+              <TabsContent value="ask" className="mt-0">
+                <NewsletterAskAbout 
+                  articles={displayArticles} 
+                  newsletterContent={generatedContent || undefined}
+                />
               </TabsContent>
             </Tabs>
           )}

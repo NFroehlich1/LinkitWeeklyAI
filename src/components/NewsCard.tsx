@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RssItem } from "@/types/newsTypes";
-import { ExternalLink, Trash2, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ExternalLink, Trash2, ChevronDown, ChevronUp, RefreshCw, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/utils/dateUtils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,15 +14,18 @@ interface NewsCardProps {
   item: RssItem;
   isLoading?: boolean;
   onDelete?: (item: RssItem) => void;
+  onTitleImproved?: (item: RssItem, newTitle: string) => void;
 }
 
-const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
+const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCardProps) => {
   const { title, link, pubDate, description, categories, sourceName, aiSummary, content } = item;
   const [isOpen, setIsOpen] = useState(false);
   const [localAiSummary, setLocalAiSummary] = useState<string | null>(aiSummary || null);
   const [isGeneratingAiSummary, setIsGeneratingAiSummary] = useState(false);
+  const [isImprovingTitle, setIsImprovingTitle] = useState(false);
+  const [localTitle, setLocalTitle] = useState<string>(title);
+  const [isDeleting, setIsDeleting] = useState(false);
   
-  // Only use imageUrl if it passes basic validation
   const validateImageUrl = (url?: string): boolean => {
     if (!url) return false;
     // Check for common image extensions
@@ -30,6 +33,14 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
   };
   
   const imageUrl = validateImageUrl(item.imageUrl) ? item.imageUrl : null;
+
+  // Verbesserte Logik für die Erkennung von eigenen Artikeln
+  const isCustomArticle = 
+    item.sourceName === 'Eigener' || 
+    item.sourceName === 'Custom' || 
+    (item as any).isCustom === true ||
+    item.guid?.includes('custom-') ||
+    false;
 
   // Show loading skeleton when article is being generated
   if (isLoading) {
@@ -62,14 +73,38 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
       </Card>
     );
   }
-  
-  const handleDelete = () => {
-    if (onDelete) {
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // If the article has an guid that looks like a database ID, try to delete it from Supabase
+      if (item.guid && item.guid.includes('-') && item.guid.length > 10) {
+        const { error } = await supabase
+          .from('daily_raw_articles')
+          .delete()
+          .eq('guid', item.guid);
+        
+        if (error) {
+          console.error("Error deleting article from database:", error);
+          toast.error("Fehler beim Löschen des Artikels aus der Datenbank");
+          return;
+        }
+        
+        toast.success("Artikel erfolgreich aus der Datenbank gelöscht");
+      }
+      
+      // Call the parent's onDelete handler
       onDelete(item);
+    } catch (error) {
+      console.error("Error deleting article:", error);
+      toast.error("Fehler beim Löschen des Artikels");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  // Get preview text - prioritize AI summary, fallback to description
   const getPreviewText = () => {
     if (localAiSummary) {
       return localAiSummary.length > 200
@@ -83,13 +118,12 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
     return null;
   };
   
-  // Generate AI summary using Supabase Edge Function with complete article data
   const generateAiSummary = async () => {
     if (isGeneratingAiSummary) return;
     
     setIsGeneratingAiSummary(true);
     try {
-      console.log("Generating AI summary for article:", title);
+      console.log("Generating AI summary for article:", localTitle);
       console.log("Article data being sent:", {
         title: item.title,
         description: item.description?.substring(0, 100),
@@ -103,7 +137,7 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
           data: { 
             article: {
               ...item,
-              // Ensure we pass the content for better summaries
+              title: localTitle,
               content: item.content || item.description || '',
               description: item.description || ''
             }
@@ -138,7 +172,55 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
     }
   };
 
-  // When expanding the article and no AI summary exists, generate one
+  const improveTitle = async () => {
+    if (isImprovingTitle) return;
+    
+    setIsImprovingTitle(true);
+    try {
+      console.log("Improving title for article:", localTitle);
+      
+      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+        body: { 
+          action: 'improve-article-title',
+          data: { 
+            article: {
+              ...item,
+              title: localTitle
+            }
+          }
+        }
+      });
+
+      if (error) {
+        console.error("Supabase function error:", error);
+        toast.error("Fehler bei der Titel-Verbesserung");
+        return;
+      }
+
+      if (data.error) {
+        console.error("Gemini API Error:", data.error);
+        toast.error("Fehler bei der Titel-Verbesserung");
+        return;
+      }
+
+      if (data.improvedTitle) {
+        setLocalTitle(data.improvedTitle);
+        if (onTitleImproved) {
+          onTitleImproved(item, data.improvedTitle);
+        }
+        toast.success("Titel erfolgreich verbessert");
+        console.log("Article title improved successfully");
+      } else {
+        toast.error("Kein verbesserter Titel erhalten");
+      }
+    } catch (error) {
+      console.error("Error improving article title:", error);
+      toast.error("Fehler bei der Titel-Verbesserung");
+    } finally {
+      setIsImprovingTitle(false);
+    }
+  };
+
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (open && !localAiSummary) {
@@ -146,27 +228,81 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
     }
   };
 
+  // Automatische Titel-Verbesserung beim Laden der Komponente
+  useEffect(() => {
+    // Nur verbessern, wenn der Titel noch nicht verbessert wurde
+    if (localTitle === item.title && !isImprovingTitle) {
+      improveTitle();
+    }
+  }, [item.title]); // Nur abhängig vom ursprünglichen Titel
+
   return (
-    <Card className="overflow-hidden h-full flex flex-col relative">
+    <Card className={`overflow-hidden h-full flex flex-col relative ${isCustomArticle ? 'border-blue-500 bg-blue-50/50 shadow-md' : ''}`}>
       {imageUrl && (
-        <div className="h-48 overflow-hidden">
+        <div className="h-48 overflow-hidden relative">
           <img 
             src={imageUrl} 
-            alt={title} 
+            alt={localTitle} 
             className="w-full h-full object-cover"
             onError={(e) => {
-              // Hide the image container if loading fails
               (e.target as HTMLImageElement).style.display = 'none';
               (e.target as HTMLImageElement).parentElement!.style.display = 'none';
             }}
           />
+          {isCustomArticle && (
+            <div className="absolute top-3 left-3 z-10">
+              <Badge variant="custom" className="shadow-lg">
+                Eigener Artikel
+              </Badge>
+            </div>
+          )}
         </div>
       )}
+      
       <CardHeader>
-        <CardTitle className="text-lg line-clamp-3">{title}</CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <CardTitle className="text-lg line-clamp-3 flex items-center gap-2">
+              {localTitle}
+              {isImprovingTitle && (
+                <div title="Titel wird mit KI verbessert...">
+                  <RefreshCw className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />
+                </div>
+              )}
+            </CardTitle>
+            {!imageUrl && isCustomArticle && (
+              <div className="mt-2">
+                <Badge variant="custom" className="shadow-sm">
+                  Eigener Artikel
+                </Badge>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDelete();
+                }}
+                disabled={isDeleting}
+                title="Artikel löschen"
+              >
+                {isDeleting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
         <div className="flex items-center justify-between mt-1">
           <span className="text-sm text-muted-foreground">{formatDate(pubDate)}</span>
-          {sourceName && (
+          {sourceName && !isCustomArticle && (
             <div>
               <Badge variant="outline">{sourceName}</Badge>
             </div>
@@ -272,18 +408,6 @@ const NewsCard = ({ item, isLoading = false, onDelete }: NewsCardProps) => {
             <ExternalLink className="h-4 w-4" />
             Artikel lesen
           </Button>
-          
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex-shrink-0 text-destructive hover:bg-destructive/10"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Artikel löschen</span>
-            </Button>
-          )}
         </div>
       </CardFooter>
     </Card>

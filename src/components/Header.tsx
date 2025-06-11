@@ -1,167 +1,37 @@
-
-import { useState, useEffect } from 'react';
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { Rss, Key, RefreshCw } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import DecoderService from "@/services/DecoderService";
+import { navItems } from "@/nav-items";
 
-interface HeaderProps {
-  onApiKeySet: (apiKey: string) => void;
-  onRefresh: () => void;
-  loading: boolean;
-  defaultApiKey?: string;
-}
+const Header = () => {
+  const location = useLocation();
 
-const Header = ({ onApiKeySet, onRefresh, loading }: HeaderProps) => {
-  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState<boolean>(false);
-  const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [keyStatus, setKeyStatus] = useState<'unknown' | 'valid' | 'invalid'>('unknown');
-  
-  // Check API key status on mount
-  useEffect(() => {
-    const checkApiKey = async () => {
-      const decoderService = new DecoderService();
-      try {
-        const result = await decoderService.verifyApiKey();
-        setKeyStatus(result.isValid ? 'valid' : 'invalid');
-        if (result.isValid) {
-          onApiKeySet('configured-in-supabase');
-        }
-      } catch (error) {
-        setKeyStatus('invalid');
-        console.error("Error checking API key:", error);
-      }
-    };
-    
-    checkApiKey();
-  }, [onApiKeySet]);
-  
-  const handleVerifyKey = async () => {
-    setIsVerifying(true);
-    
-    try {
-      const decoderService = new DecoderService();
-      console.log("Verifying Gemini API key via Supabase...");
-      
-      const result = await decoderService.verifyApiKey();
-      
-      if (result.isValid) {
-        setKeyStatus('valid');
-        onApiKeySet('configured-in-supabase');
-        toast.success("Gemini API-Schlüssel erfolgreich verifiziert!");
-        setApiKeyDialogOpen(false);
-        console.log("✅ Gemini API key verification successful");
-      } else {
-        setKeyStatus('invalid');
-        console.error("❌ Gemini API key verification failed:", result.message);
-        toast.error(`API-Schlüssel Problem: ${result.message}`);
-      }
-    } catch (error) {
-      setKeyStatus('invalid');
-      console.error("API key verification error:", error);
-      toast.error(`Fehler bei der Überprüfung: ${(error as Error).message}`);
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-  
-  const getKeyStatusColor = () => {
-    switch (keyStatus) {
-      case 'valid': return 'text-green-600';
-      case 'invalid': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-  
-  const getKeyStatusText = () => {
-    switch (keyStatus) {
-      case 'valid': return 'API-Schlüssel aktiv';
-      case 'invalid': return 'API-Schlüssel fehlt';
-      default: return 'Überprüfe API-Schlüssel...';
-    }
-  };
-  
   return (
-    <header className="border-b bg-card shadow-sm">
-      <div className="container mx-auto py-4 px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Rss className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold gradient-text">KI News Digest</h1>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Dialog open={apiKeyDialogOpen} onOpenChange={setApiKeyDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-              >
-                <Key className="h-4 w-4" />
-                <span className={getKeyStatusColor()}>{getKeyStatusText()}</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Gemini API-Schlüssel Status</DialogTitle>
-                <DialogDescription>
-                  Der Gemini API-Schlüssel wird sicher in Supabase verwaltet.
-                  Sie können den Status überprüfen und bei Bedarf einen neuen Schlüssel konfigurieren.
-                  <a 
-                    href="https://aistudio.google.com/app/apikey" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline block mt-2"
-                  >
-                    Hier können Sie einen neuen Gemini API-Schlüssel erstellen
-                  </a>
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 pt-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Key className="h-4 w-4" />
-                    <span className="font-medium">Aktueller Status:</span>
-                  </div>
-                  <p className={`text-sm ${getKeyStatusColor()}`}>
-                    {getKeyStatusText()}
-                  </p>
-                  {keyStatus === 'invalid' && (
-                    <p className="text-xs text-gray-600 mt-1">
-                      Bitte kontaktieren Sie den Administrator, um den API-Schlüssel zu konfigurieren.
-                    </p>
-                  )}
-                </div>
-                
-                <DialogFooter>
-                  <Button 
-                    onClick={handleVerifyKey} 
-                    disabled={isVerifying}
-                    className="flex items-center gap-2"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Wird überprüft...
-                      </>
-                    ) : (
-                      <>Status überprüfen</>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </div>
-            </DialogContent>
-          </Dialog>
+    <header className="border-b border-white/20 bg-white/40 backdrop-blur-xl sticky top-0 z-50 shadow-lg shadow-black/5">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+              📰 LINKIT NEWS
+            </span>
+          </Link>
           
-          <Button 
-            onClick={onRefresh} 
-            disabled={loading}
-            variant="default"
-          >
-            {loading ? "Wird geladen..." : "Aktualisieren"}
-          </Button>
+          <nav className="hidden md:flex items-center space-x-6">
+            {navItems.map((item) => (
+              <Link key={item.to} to={item.to}>
+                <Button 
+                  variant={location.pathname === item.to ? "default" : "ghost"}
+                  className={`flex items-center gap-2 transition-all duration-200 ${
+                    location.pathname === item.to 
+                      ? ""
+                      : "hover:bg-white/60 hover:backdrop-blur-md hover:shadow-sm hover:border hover:border-white/30"
+                  }`}
+                >
+                  {item.icon}
+                  {item.title}
+                </Button>
+              </Link>
+            ))}
+          </nav>
         </div>
       </div>
     </header>
