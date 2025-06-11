@@ -13,6 +13,7 @@ import NewsletterAskAbout from "./NewsletterAskAbout";
 import { Calendar, FileEdit, Mail, RefreshCw, TrendingUp, Archive, CheckCircle, AlertTriangle, Save, Zap, Star, MessageSquare } from "lucide-react";
 import NewsService from "@/services/NewsService";
 import NewsletterArchiveService from "@/services/NewsletterArchiveService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WeeklyDigestProps {
   digest: WeeklyDigestType;
