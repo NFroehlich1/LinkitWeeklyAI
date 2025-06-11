@@ -23,10 +23,68 @@ const Index = () => {
   const [articleSummaries, setArticleSummaries] = useState<Record<string, string>>({});
   const [generatingSummaries, setGeneratingSummaries] = useState<Set<string>>(new Set());
   const [improvingTitles, setImprovingTitles] = useState<Set<string>>(new Set());
+  const [debugLoading, setDebugLoading] = useState(false);
+  const [geminiTestLoading, setGeminiTestLoading] = useState(false);
 
   useEffect(() => {
     fetchNews();
   }, []);
+
+  const testGeminiAPI = async () => {
+    setGeminiTestLoading(true);
+    try {
+      console.log("=== DEBUG: TESTING GEMINI API ===");
+      toast.info("Teste Gemini API...");
+      
+      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+        body: { 
+          action: 'verify-key'
+        }
+      });
+
+      if (error) {
+        console.error("Supabase function error:", error);
+        toast.error(`Gemini API Fehler: ${error.message}`);
+        return;
+      }
+
+      if (data.isValid) {
+        toast.success(`✅ Gemini API funktioniert: ${data.message}`);
+      } else {
+        toast.error(`❌ Gemini API Problem: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Gemini API test error:", error);
+      toast.error(`Gemini Test Fehler: ${(error as Error).message}`);
+    } finally {
+      setGeminiTestLoading(false);
+    }
+  };
+
+  const testRssLoading = async () => {
+    setDebugLoading(true);
+    try {
+      console.log("=== DEBUG: TESTING RSS LOADING ===");
+      toast.info("Teste RSS-Loading...");
+      
+      // Force fresh fetch from RSS feeds
+      const freshItems = await newsService.fetchNews();
+      console.log("Fresh items fetched:", freshItems.length);
+      
+      if (freshItems.length > 0) {
+        toast.success(`✅ ${freshItems.length} neue Artikel gefunden!`);
+        // Refresh the display
+        fetchNews();
+      } else {
+        toast.warning("Keine neuen Artikel gefunden");
+      }
+    } catch (error) {
+      console.error("Debug RSS loading error:", error);
+      toast.error(`RSS-Test Fehler: ${(error as Error).message}`);
+    } finally {
+      setDebugLoading(false);
+    }
+  };
 
   const fetchNews = async () => {
     setIsLoading(true);
@@ -173,6 +231,36 @@ const Index = () => {
               Top 10 für Studenten anzeigen
             </Button>
           </Link>
+          
+          {/* Debug RSS Loading Button */}
+          <Button 
+            onClick={testRssLoading}
+            disabled={debugLoading}
+            variant="outline" 
+            className="bg-orange-50 border-orange-200 hover:bg-orange-100"
+          >
+            {debugLoading ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {debugLoading ? "Teste..." : "RSS Debug Test"}
+          </Button>
+          
+          {/* Debug Gemini API Button */}
+          <Button 
+            onClick={testGeminiAPI}
+            disabled={geminiTestLoading}
+            variant="outline" 
+            className="bg-red-50 border-red-200 hover:bg-red-100"
+          >
+            {geminiTestLoading ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {geminiTestLoading ? "Teste..." : "Gemini API Test"}
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
