@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RssItem } from "@/types/newsTypes";
-import { Check, X, ArrowUp, ArrowDown, Star } from "lucide-react";
+import { Check, X, ArrowUp, ArrowDown, Star, Trash2 } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ArticleRankingProps {
   articles: RssItem[];
@@ -12,6 +14,7 @@ interface ArticleRankingProps {
   onSelectionChange: (articles: RssItem[]) => void;
   onConfirm: (articles: RssItem[]) => void;
   onCancel: () => void;
+  onArticleDeleted?: (article: RssItem) => void;
 }
 
 const ArticleRanking = ({ 
@@ -19,9 +22,11 @@ const ArticleRanking = ({
   selectedArticles, 
   onSelectionChange, 
   onConfirm, 
-  onCancel 
+  onCancel,
+  onArticleDeleted
 }: ArticleRankingProps) => {
   const [localSelection, setLocalSelection] = useState<RssItem[]>(selectedArticles);
+  const [deletingArticles, setDeletingArticles] = useState<Set<string>>(new Set());
 
   const calculateRelevanceScore = (article: RssItem): number => {
     let score = 0;
@@ -109,6 +114,52 @@ const ArticleRanking = ({
     if (score >= 5) return { label: 'Relevant', color: 'bg-blue-500' };
     if (score >= 3) return { label: 'Mäßig relevant', color: 'bg-yellow-500' };
     return { label: 'Weniger relevant', color: 'bg-gray-500' };
+  };
+
+  const handlePermanentDelete = async (article: RssItem) => {
+    const articleId = article.guid || article.link;
+    if (!articleId) return;
+    
+    setDeletingArticles(prev => new Set([...prev, articleId]));
+    
+    try {
+      // Delete from database
+      const { error } = await supabase
+        .from('daily_raw_articles')
+        .delete()
+        .eq('guid', article.guid);
+      
+      if (error) {
+        console.error("Error deleting article from database:", error);
+        toast.error("Fehler beim Löschen des Artikels aus der Datenbank");
+        return;
+      }
+      
+      // Remove from local selection if present
+      const newSelection = localSelection.filter(selected => 
+        selected.guid !== article.guid && selected.link !== article.link
+      );
+      setLocalSelection(newSelection);
+      onSelectionChange(newSelection);
+      
+      // Notify parent component
+      if (onArticleDeleted) {
+        onArticleDeleted(article);
+      }
+      
+      toast.success("Artikel dauerhaft gelöscht");
+      console.log("✅ Article permanently deleted:", article.title);
+      
+    } catch (error) {
+      console.error("Error in permanent delete:", error);
+      toast.error("Fehler beim Löschen des Artikels");
+    } finally {
+      setDeletingArticles(prev => {
+        const updated = new Set(prev);
+        updated.delete(articleId);
+        return updated;
+      });
+    }
   };
 
   return (
@@ -211,14 +262,16 @@ const ArticleRanking = ({
             return (
               <div 
                 key={`ranked-${article.guid || article.link}-${index}`}
-                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
                   selected 
                     ? 'bg-blue-50 border-blue-200' 
                     : 'hover:bg-gray-50 border-gray-200'
                 }`}
-                onClick={() => toggleArticle(article)}
               >
-                <div className="flex items-center justify-center w-8 h-8">
+                <div 
+                  className="flex items-center justify-center w-8 h-8 cursor-pointer"
+                  onClick={() => toggleArticle(article)}
+                >
                   {selected ? (
                     <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center">
                       <Check className="h-3 w-3 text-white" />
@@ -228,7 +281,7 @@ const ArticleRanking = ({
                   )}
                 </div>
                 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleArticle(article)}>
                   <h4 className="font-medium text-sm line-clamp-2">{article.title}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-muted-foreground">
@@ -242,6 +295,24 @@ const ArticleRanking = ({
                     </div>
                   </div>
                 </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePermanentDelete(article);
+                  }}
+                  disabled={deletingArticles.has(article.guid || article.link)}
+                  title="Artikel dauerhaft löschen"
+                >
+                  {deletingArticles.has(article.guid || article.link) ? (
+                    <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             );
           })}

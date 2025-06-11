@@ -204,12 +204,41 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
       }
 
       if (data.improvedTitle) {
+        // Lokalen State aktualisieren
         setLocalTitle(data.improvedTitle);
-        if (onTitleImproved) {
-          onTitleImproved(item, data.improvedTitle);
+        
+        // Titel dauerhaft in der Datenbank speichern
+        if (item.guid) {
+          console.log("Saving improved title to database for article:", item.guid);
+          const { error: updateError } = await supabase
+            .from('daily_raw_articles')
+            .update({ 
+              title: data.improvedTitle,
+              updated_at: new Date().toISOString()
+            })
+            .eq('guid', item.guid);
+
+          if (updateError) {
+            console.error("Error saving improved title to database:", updateError);
+            toast.error("Titel verbessert, aber Speicherung fehlgeschlagen");
+          } else {
+            console.log("✅ Improved title saved to database successfully");
+            toast.success("Titel verbessert und dauerhaft gespeichert");
+            
+            // Parent Component über Änderung informieren
+            if (onTitleImproved) {
+              onTitleImproved({ ...item, title: data.improvedTitle }, data.improvedTitle);
+            }
+          }
+        } else {
+          // Fallback für Artikel ohne GUID (sollte nicht vorkommen)
+          toast.success("Titel verbessert (nur für diese Sitzung)");
+          if (onTitleImproved) {
+            onTitleImproved(item, data.improvedTitle);
+          }
         }
-        toast.success("Titel erfolgreich verbessert");
-        console.log("Article title improved successfully");
+        
+        console.log("Article title improved successfully:", data.improvedTitle);
       } else {
         toast.error("Kein verbesserter Titel erhalten");
       }

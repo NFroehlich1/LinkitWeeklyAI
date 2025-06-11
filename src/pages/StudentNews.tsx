@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,7 @@ const StudentNews = () => {
     try {
       console.log("=== FETCHING STUDENT RELEVANT NEWS ===");
       
-      // Get all current week articles
+      // Get all current week articles - SAME as main page
       let allItems: RssItem[] = [];
       try {
         allItems = await newsService.getStoredArticlesForCurrentWeek();
@@ -39,19 +38,28 @@ const StudentNews = () => {
         allItems = await newsService.fetchNews();
       }
 
-      // Filter for current week
+      // Filter for current week - SAME as main page
       const currentWeekItems = newsService.filterCurrentWeekNews(allItems);
       
-      // Filter for student-relevant articles based on keywords and topics
-      const studentRelevantItems = filterStudentRelevantArticles(currentWeekItems);
+      // Use the SAME ranking logic as the main page, but still filter for students
+      const rankedArticles = currentWeekItems
+        .map(article => ({
+          ...article,
+          relevanceScore: calculateRelevanceScore(article)
+        }))
+        .sort((a, b) => b.relevanceScore - a.relevanceScore);
       
-      // Sort by relevance and take top 10
-      const topRelevantArticles = studentRelevantItems
-        .sort((a, b) => calculateRelevanceScore(b) - calculateRelevanceScore(a))
-        .slice(0, 10);
+      // Filter for student-relevant content from the already ranked articles
+      const studentRelevantItems = rankedArticles.filter(article => 
+        filterStudentRelevantArticles([article]).length > 0
+      );
+      
+      // Take top 10 from the student-relevant articles
+      const topRelevantArticles = studentRelevantItems.slice(0, 10);
       
       setRelevantArticles(topRelevantArticles);
-      console.log(`✅ Found ${topRelevantArticles.length} student-relevant articles`);
+      console.log(`✅ Found ${topRelevantArticles.length} student-relevant articles from ${rankedArticles.length} total articles`);
+      console.log("Student articles ranking matches main page ranking now");
       
     } catch (error) {
       console.error('Error fetching student relevant news:', error);
@@ -100,31 +108,43 @@ const StudentNews = () => {
 
   const calculateRelevanceScore = (article: RssItem): number => {
     let score = 0;
-    const searchText = `${article.title} ${article.description || ''}`.toLowerCase();
     
-    // High priority keywords
-    const highPriorityKeywords = ['ki', 'ai', 'student', 'studium', 'programmierung', 'startup', 'innovation'];
-    highPriorityKeywords.forEach(keyword => {
-      if (searchText.includes(keyword)) score += 3;
+    // Use the SAME ranking logic as WeeklyDigest and ArticleRanking
+    const relevantKeywords = [
+      'KI', 'AI', 'künstliche intelligenz', 'machine learning', 'deep learning',
+      'chatgpt', 'openai', 'google', 'microsoft', 'meta', 'tesla', 'nvidia',
+      'startup', 'tech', 'innovation', 'digitalisierung', 'automation',
+      'robotik', 'algorithmus', 'daten', 'software', 'hardware'
+    ];
+    
+    const titleLower = article.title.toLowerCase();
+    const descLower = (article.description || '').toLowerCase();
+    
+    relevantKeywords.forEach(keyword => {
+      if (titleLower.includes(keyword.toLowerCase())) score += 3;
+      if (descLower.includes(keyword.toLowerCase())) score += 1;
     });
     
-    // Medium priority keywords
-    const mediumPriorityKeywords = ['technologie', 'digital', 'zukunft', 'karriere', 'job'];
-    mediumPriorityKeywords.forEach(keyword => {
-      if (searchText.includes(keyword)) score += 2;
+    const daysOld = Math.floor((Date.now() - new Date(article.pubDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysOld <= 1) score += 5;
+    else if (daysOld <= 3) score += 3;
+    else if (daysOld <= 7) score += 1;
+    
+    if (article.sourceName === 'Eigener') score += 2;
+    
+    const reliableSources = ['techcrunch', 'wired', 'ars technica', 'the verge'];
+    const sourceLower = (article.sourceName || '').toLowerCase();
+    if (reliableSources.some(source => sourceLower.includes(source))) score += 2;
+    
+    // Additional bonus for student-relevant content
+    const studentKeywords = ['student', 'studium', 'programmierung', 'karriere', 'job', 'bildung'];
+    studentKeywords.forEach(keyword => {
+      if (titleLower.includes(keyword.toLowerCase()) || descLower.includes(keyword.toLowerCase())) {
+        score += 1; // Small bonus for student relevance
+      }
     });
     
-    // Recent articles get bonus points
-    const articleDate = new Date(article.pubDate);
-    const now = new Date();
-    const hoursDiff = (now.getTime() - articleDate.getTime()) / (1000 * 3600);
-    if (hoursDiff < 24) score += 2;
-    else if (hoursDiff < 48) score += 1;
-    
-    // Articles with AI summary get bonus
-    if (article.aiSummary) score += 1;
-    
-    return score;
+    return Math.max(score, 1);
   };
 
   return (

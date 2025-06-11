@@ -131,6 +131,32 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
     
     toast.success("Artikel aus der Übersicht entfernt");
   };
+
+  const handlePermanentDeleteArticle = (articleToDelete: RssItem) => {
+    const articleId = getArticleId(articleToDelete);
+    
+    // Remove from current digest
+    const updatedDigest = {
+      ...currentDigest,
+      items: currentDigest.items.filter(item => getArticleId(item) !== articleId)
+    };
+    setCurrentDigest(updatedDigest);
+    
+    // Remove from selected articles if present
+    if (selectedArticles) {
+      const updatedSelected = selectedArticles.filter(item => getArticleId(item) !== articleId);
+      setSelectedArticles(updatedSelected.length > 0 ? updatedSelected : null);
+    }
+    
+    // Remove from improved titles
+    setImprovedTitles(prev => {
+      const updated = { ...prev };
+      delete updated[articleId];
+      return updated;
+    });
+    
+    console.log("✅ Article permanently removed from digest:", articleToDelete.title);
+  };
   
   const saveToArchive = async (content: string): Promise<boolean> => {
     console.log("=== STARTING NEWSLETTER ARCHIVE SAVE ===");
@@ -463,6 +489,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
               onSelectionChange={handleSelectionChange}
               onConfirm={completeArticleSelection}
               onCancel={cancelArticleSelection}
+              onArticleDeleted={handlePermanentDeleteArticle}
             />
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -543,7 +570,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                           key={`${getArticleId(item)}-${index}`}
                           item={item}
                           onTitleImproved={handleTitleImproved}
-                          onDelete={handleDeleteArticle}
+                          onDelete={handlePermanentDeleteArticle}
                         />
                       ))}
                     </div>
