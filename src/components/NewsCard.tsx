@@ -228,14 +228,6 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
     }
   };
 
-  // Automatische Titel-Verbesserung beim Laden der Komponente
-  useEffect(() => {
-    // Nur verbessern, wenn der Titel noch nicht verbessert wurde
-    if (localTitle === item.title && !isImprovingTitle) {
-      improveTitle();
-    }
-  }, [item.title]); // Nur abhängig vom ursprünglichen Titel
-
   return (
     <Card className={`overflow-hidden h-full flex flex-col relative ${isCustomArticle ? 'border-blue-500 bg-blue-50/50 shadow-md' : ''}`}>
       {imageUrl && (
@@ -269,6 +261,19 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
                   <RefreshCw className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />
                 </div>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-blue-500 hover:bg-blue-50 flex-shrink-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  improveTitle();
+                }}
+                disabled={isImprovingTitle}
+                title="Titel mit KI verbessern"
+              >
+                <Edit3 className="h-3 w-3" />
+              </Button>
             </CardTitle>
             {!imageUrl && isCustomArticle && (
               <div className="mt-2">
