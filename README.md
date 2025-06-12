@@ -1,190 +1,215 @@
-# 🤖 LINKIT WEEKLY KI
-## Intelligenter Newsletter Generator für Tech-Communities
+# �� LINKIT WEEKLY KI - Newsletter Generator
 
-**LINKIT WEEKLY KI** ist eine KI-gestützte Plattform zur automatischen Erstellung hochwertiger Tech-Newsletter. Das System aggregiert relevante Artikel aus führenden Tech-Quellen und generiert professionelle Newsletter-Inhalte speziell für Studierende und Tech-Enthusiasten.
+KI-gestütztes System zur automatischen Erstellung von Tech-Newslettern mit intelligenter Artikel-Aggregation, Content-Management und Newsletter-Generierung.
 
----
+## ✨ Hauptfunktionen
 
-## 🎯 Kernfunktionen
+### 📰 **News-Aggregation & Content Management**
+- **RSS-Feed Integration**: Automatische Sammlung aus The Decoder und konfigurierbaren Quellen
+- **Intelligente Artikel-Bewertung**: Scoring-Algorithmus für Relevanz und Aktualität
+- **Custom URL Import**: Manuelle Artikel-Eingabe über URL-Import
+- **RSS Source Management**: Verwaltung mehrerer RSS-Quellen
+- **Artikel-Filterung**: Duplikat-Erkennung und Content-Validierung
 
-### **Intelligente Content-Aggregation**
-- Automatische Sammlung relevanter Tech- und KI-News aus vertrauenswürdigen Quellen
-- Intelligente Filterung und Bewertung nach Relevanz und Aktualität
-- Duplikat-Erkennung für hochwertige, einzigartige Inhalte
+### 🎯 **Artikel-Ranking & Kuration**
+- **Top 10 Ranking System**: Automatische und manuelle Artikel-Auswahl
+- **Drag & Drop Interface**: Intuitive Reihenfolgen-Anpassung
+- **Artikel-Verwaltung**: Permanente Löschung und Bearbeitung
+- **Studenten-Ansicht**: Spezielle Filterung für hochschulrelevante Inhalte
+- **Content Tabs**: Strukturierte Darstellung von Artikel-Metadaten
 
-### **KI-gestützte Newsletter-Erstellung**
-- **Google Gemini Integration**: Professionelle Zusammenfassungen mit modernster KI-Technologie
-- **Zielgruppenoptimierung**: Speziell für Studierende und Tech-Communities angepasst
-- **Konsistente Qualität**: Strukturierte, gut lesbare Newsletter-Formate
+### 🧠 **KI-Integration (Google Gemini)**
+- **Newsletter-Generierung**: Automatische Erstellung mit Gemini 1.5 Flash
+- **Titel-Verbesserung**: KI-basierte Optimierung von Artikel-Titeln
+- **Content-Zusammenfassung**: Intelligente Artikel-Abstracts
+- **Q&A System**: Interaktive Fragen zu Newsletter-Inhalten
+- **Dynamische Fragevorschläge**: Adaptive Fragen basierend auf Artikel-Inhalten
 
-### **Smart Content Management**
-- **Top 10 Ranking-System**: Automatische Bewertung der wichtigsten Artikel
-- **Manuelle Kuration**: Flexible Bearbeitung und Anpassung der Artikel-Auswahl
-- **Content-Optimierung**: KI-basierte Titel-Verbesserung für bessere Lesbarkeit
+### 📧 **Newsletter-Management**
+- **Newsletter-Archiv**: Vollständige Historien-Verwaltung
+- **Abonnement-System**: E-Mail-Anmeldung mit Bestätigung
+- **Newsletter-Versand**: Automatisierte E-Mail-Distribution
+- **Archiv-Suche**: Q&A-basierte Suche in vergangenen Newslettern
+- **Newsletter-Historie**: Chronologische Übersicht aller Newsletter
 
-### **Interaktives Q&A System**
-- **Intelligente Fragestellung**: Automatische Generierung relevanter Fragen zu Newsletter-Inhalten
-- **Adaptive Vorschläge**: Dynamische Anpassung der Fragen basierend auf aktuellen Artikeln
-- **Chat-Interface**: Natürlichsprachliche Interaktion mit Newsletter-Inhalten
+### 🔧 **Administration & Automatisierung**
+- **Admin Panel**: Benutzer-Management und System-Konfiguration
+- **Cron-Jobs**: Automatische tägliche und wöchentliche Verarbeitung
+- **Debug-Tools**: RSS-Test und API-Validierung
+- **Newsletter-Scheduler**: Zeitgesteuerte Newsletter-Erstellung
+- **System-Monitoring**: Umfassendes Logging und Error-Tracking
 
----
-
-## 🛠 Technologie & Architecture
+## 🛠 Technologie-Stack
 
 ### **Frontend**
-- React 18 mit TypeScript für typsichere Entwicklung
-- Moderne UI mit Tailwind CSS und shadcn/ui Komponenten
-- Responsive Design für alle Endgeräte
+- **React 18** mit TypeScript und Vite
+- **Tailwind CSS** + **shadcn/ui** Komponenten-Library
+- **React Router** für Navigation
+- **React Query** für State Management
+- **React Markdown** für Content-Rendering
 
-### **Backend & KI**
-- Supabase als vollständige Backend-Lösung
-- Google Gemini 1.5 Flash für KI-Textgenerierung
-- Edge Functions für optimale Performance
+### **Backend & Infrastruktur**
+- **Supabase** (PostgreSQL Database + Edge Functions)
+- **Deno Runtime** für Edge Functions
+- **Google Gemini 1.5 Flash API** für KI-Features
+- **RSS2JSON** für Feed-Verarbeitung
 
-### **Datenverarbeitung**
-- PostgreSQL-Datenbank für zuverlässige Datenspeicherung
-- RSS-Feed-Integration für automatische Content-Aktualisierung
-- Intelligente Algorithmen für Content-Bewertung und -Filterung
+### **Edge Functions (Supabase)**
+```
+├── gemini-ai/                    # KI-Integration
+├── fetch-rss/                   # RSS-Feed-Verarbeitung
+├── auto-generate-newsletter/     # Newsletter-Generierung
+├── newsletter-send/              # E-Mail-Versand
+├── newsletter-send-email/        # E-Mail-Templates
+├── newsletter-send-confirmation/ # Versand-Bestätigung
+├── newsletter-confirm/           # Abonnement-Bestätigung
+├── newsletter-unsubscribe/       # Abmeldung
+├── qa-archive-search/           # Q&A-Archiv-Suche
+├── daily-article-processor/     # Tägliche Artikel-Verarbeitung
+├── daily-decoder-processor/     # Decoder-Artikel-Processing
+├── weekly-newsletter-processor/ # Wöchentliche Newsletter-Erstellung
+├── weekly-newsletter-scheduler/ # Newsletter-Zeitplanung
+├── setup-daily-cron/           # Cron-Job-Setup
+├── cron-trigger/               # Automatische Trigger
+├── test-article-system/        # System-Tests
+└── test-decoder-system/        # Decoder-Tests
+```
 
----
+## 📋 Systemvoraussetzungen
 
-## 🚀 Setup & Konfiguration
+- Node.js ≥ 18.0.0
+- npm Package Manager
+- Supabase Account mit Edge Functions
+- Google Gemini API Key
 
-### **Systemvoraussetzungen**
-- Node.js (Version 18 oder höher)
-- Aktive Internetverbindung
-- Supabase Account
-- Google Gemini API Zugang
+## 🚀 Installation & Setup
 
-### **Installation**
+### 1. Repository klonen und Dependencies installieren
 ```bash
 git clone https://github.com/NFroehlich1/LinkitWeeklyAI.git
 cd LinkitWeeklyAI
 npm install
+```
+
+### 2. Umgebung konfigurieren
+```bash
+# Entwicklungsserver starten
 npm run dev
+
+# Build für Produktion
+npm run build
+
+# Tests ausführen
+npm run test
 ```
 
-### **API-Konfiguration**
-1. **Google Gemini API Key**
-   - Registrierung unter [Google AI Studio](https://aistudio.google.com/app/apikey)
-   - API-Key-Generierung und -Verwaltung
-   - Integration über Supabase Environment Variables
+### 3. Supabase & Gemini API Setup
+- **Gemini API**: [Google AI Studio](https://aistudio.google.com/app/apikey)
+- **Supabase**: Environment Variables in Edge Functions Settings
+- **Cron Jobs**: Automatische Setup via `setup-daily-article-cron.sql`
 
-2. **Supabase Setup**
-   - Dashboard-Zugang über [Supabase](https://supabase.com/dashboard)
-   - Edge Functions Konfiguration
-   - Datenbank-Schema-Setup
+## 📱 Anwendungsstruktur
 
----
+### **Hauptseiten**
+- **Index** (`/`): Artikel-Übersicht mit Ranking-System
+- **Newsletter** (`/newsletter`): Newsletter-Generierung und -Verwaltung
+- **Student News** (`/studentnews`): Studenten-optimierte Artikel-Ansicht
+- **Archive Q&A** (`/archive-qa`): Q&A-System für Newsletter-Archive
 
-## 📊 Funktionsumfang
-
-### **Content Management**
-- **RSS-Integration**: Automatischer Import neuer Artikel
-- **Artikel-Bewertung**: Intelligentes Ranking-System
-- **Manuelle Kuration**: Flexible Bearbeitung der Artikel-Auswahl
-- **Content-Optimierung**: KI-basierte Titel- und Beschreibungsverbesserung
-
-### **Newsletter-Generierung**
-- **Automatische Erstellung**: KI-generierte Newsletter aus ausgewählten Artikeln
-- **Konsistente Formatierung**: Professionelle Markdown-Ausgabe
-- **Archivierung**: Automatische Speicherung aller generierten Newsletter
-
-### **Interaktive Features**
-- **Q&A-System**: Intelligente Fragestellung zu Newsletter-Inhalten
-- **Dynamische Vorschläge**: Adaptive Fragen basierend auf aktuellen Themen
-- **Chat-Interface**: Natürlichsprachliche Interaktion
-
-### **Spezielle Ansichten**
-- **Standard-Newsletter**: Umfassende Tech-News-Übersicht
-- **Studenten-Edition**: Fokus auf hochschulrelevante Inhalte
-- **Custom-Filterung**: Anpassbare Themen- und Quellenauswahl
-
----
-
-## 🔧 Administration & Wartung
-
-### **Content-Qualitätssicherung**
-- Automatische Duplikat-Erkennung
-- Intelligente Relevanz-Bewertung
-- Manuelle Moderations-Tools
-
-### **System-Monitoring**
-- Umfassendes Logging für alle Systemkomponenten
-- API-Status-Überwachung
-- Performance-Metriken und Error-Tracking
-
-### **Fehlerbehebung**
-- **API-Verbindungsprobleme**: Überprüfung der Gemini API-Konfiguration
-- **Content-Loading-Issues**: RSS-Feed-Status-Diagnose
-- **Performance-Optimierung**: Datenbank- und Cache-Management
-
----
-
-## 🏗 Projektarchitektur
-
+### **Komponenten-Architektur**
 ```
-Frontend (React/TypeScript)
-├── UI Components (shadcn/ui)
-├── State Management
-└── API Integration
-
-Backend (Supabase)
-├── PostgreSQL Database
-├── Edge Functions (Deno)
-├── Authentication & Security
-└── Real-time Updates
-
-KI-Integration
-├── Google Gemini API
-├── Content Processing
-└── Natural Language Generation
+src/
+├── components/
+│   ├── ui/                      # shadcn/ui Basis-Komponenten
+│   ├── Header.tsx               # Navigation
+│   ├── NewsCard.tsx             # Artikel-Darstellung
+│   ├── NewsContentTab.tsx       # Artikel-Details
+│   ├── WeeklyDigest.tsx         # Newsletter-Generator
+│   ├── ArticleRanking.tsx       # Top-10-Management
+│   ├── ArticleSelector.tsx      # Artikel-Auswahl
+│   ├── NewsletterAskAbout.tsx   # Q&A für Newsletter
+│   ├── NewsletterArchiveQA.tsx  # Archiv Q&A System
+│   ├── NewsletterArchive.tsx    # Newsletter-Historie
+│   ├── NewsletterManagement.tsx # Newsletter-Verwaltung
+│   ├── NewsletterHistory.tsx    # Newsletter-Chronologie
+│   ├── NewsletterSubscribe*.tsx # Abonnement-System
+│   ├── CustomArticleImporter.tsx # URL-Import
+│   ├── CustomUrlImport.tsx      # URL-Verarbeitung
+│   ├── RssSourceManager.tsx     # RSS-Quellen-Verwaltung
+│   ├── AdminPanel.tsx           # Administration
+│   ├── AdminLoginForm.tsx       # Admin-Authentifizierung
+│   └── NewsCardSkeleton.tsx     # Loading-States
+├── services/
+│   ├── NewsService.ts           # Haupt-News-Logic
+│   ├── DecoderService.ts        # Decoder-Integration
+│   ├── DigestService.ts         # Newsletter-Erstellung
+│   ├── NewsletterArchiveService.ts # Archiv-Management
+│   ├── RawArticleService.ts     # Artikel-Datenbank
+│   ├── RssFeedService.ts        # RSS-Verarbeitung
+│   ├── RssSourceService.ts      # RSS-Quellen
+│   └── LocalNewsletterService.ts # Lokale Newsletter-Verwaltung
+├── pages/                       # React Router Pages
+├── types/                       # TypeScript Definitionen
+├── hooks/                       # Custom React Hooks
+├── utils/                       # Hilfsfunktionen
+└── integrations/               # Externe API-Integrationen
 ```
 
+## 🔧 Funktionen im Detail
+
+### **RSS & Content Management**
+- Automatischer Import aus konfigurierbaren RSS-Quellen
+- Manuelle URL-Eingabe für Custom Content
+- Intelligente Duplikat-Erkennung
+- Content-Validierung und -Bereinigung
+
+### **Newsletter-System**
+- KI-basierte Newsletter-Generierung
+- Anpassbare Templates und Formate
+- Automatischer E-Mail-Versand
+- Abonnement-Management mit Double-Opt-In
+
+### **Q&A & Archiv**
+- Intelligente Fragen zu Newsletter-Inhalten
+- Archiv-Durchsuchung vergangener Newsletter
+- Dynamische Fragevorschläge
+- Chat-Interface für Benutzerinteraktion
+
+### **Administration**
+- Benutzer-Management und Authentifizierung
+- System-Konfiguration und -Monitoring
+- Debug-Tools für RSS und API-Tests
+- Automatisierte Cron-Job-Verwaltung
+
+## 🔄 Automatisierung & Cron-Jobs
+
+### **Tägliche Verarbeitung**
+- **Artikel-Import**: Automatische RSS-Aggregation
+- **Content-Processing**: Artikel-Bewertung und -Filterung
+- **Data-Cleanup**: Bereinigung veralteter Daten
+
+### **Wöchentliche Newsletter**
+- **Artikel-Auswahl**: Top-Artikel-Ermittlung
+- **Newsletter-Generierung**: KI-basierte Content-Erstellung
+- **Versand-Vorbereitung**: Template-Generierung und -Validierung
+- **E-Mail-Distribution**: Automatisierter Versand an Abonnenten
+
+## 🐛 Debug & Monitoring
+
+### **Debug-Tools**
+- **RSS Debug Test**: Validierung der RSS-Feed-Verbindungen
+- **Gemini API Test**: KI-API-Konfiguration und -Status
+- **System Health Checks**: Umfassende Funktionalitätstests
+
+### **Logging & Monitoring**
+- Detailliertes Console-Logging für alle Systemkomponenten
+- Error-Tracking und Performance-Monitoring
+- API-Response-Validierung und -Logging
+
+## 📄 Lizenz
+
+MIT License - siehe [LICENSE](LICENSE) für Details.
+
 ---
 
-## 📈 Leistungsmerkmale
-
-### **Skalierbarkeit**
-- Edge Computing für globale Performance
-- Optimierte Datenbankabfragen
-- Effiziente Caching-Strategien
-
-### **Zuverlässigkeit**
-- Automatische Fehlerbehandlung
-- Fallback-Mechanismen
-- Kontinuierliche Datensicherung
-
-### **Benutzerfreundlichkeit**
-- Intuitive Benutzeroberfläche
-- Responsive Design
-- Barrierefreie Gestaltung
-
----
-
-## 🤝 Entwicklung & Beitrag
-
-### **Code-Qualität**
-- TypeScript für typsichere Entwicklung
-- Moderne React-Patterns und Best Practices
-- Umfassende Komponenten-Dokumentation
-
-### **Contribution Guidelines**
-1. Repository forken
-2. Feature-Branch erstellen
-3. Änderungen implementieren und testen
-4. Pull Request mit detaillierter Beschreibung
-
----
-
-## 📄 Lizenz & Support
-
-**Lizenz**: MIT License - vollständige kommerzielle und private Nutzung erlaubt
-
-**Entwickelt für**: LINKIT Karlsruhe Community und Tech-Enthusiasten
-
-**Repository**: [GitHub - LinkitWeeklyAI](https://github.com/NFroehlich1/LinkitWeeklyAI)
-
----
-
-*Transformieren Sie Ihre Tech-Community-Kommunikation mit intelligenter, KI-gestützter Newsletter-Erstellung.*
+**Entwickelt für die LINKIT Karlsruhe Community**
