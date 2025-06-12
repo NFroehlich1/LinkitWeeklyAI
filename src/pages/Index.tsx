@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { RefreshCw, TrendingUp, Plus, ExternalLink, ChevronDown, ChevronUp, Edit3, GraduationCap } from "lucide-react";
+import { RefreshCw, TrendingUp, Plus, ExternalLink, ChevronDown, ChevronUp, Edit3, GraduationCap, Database } from "lucide-react";
 import NewsService, { WeeklyDigest, RssItem } from "@/services/NewsService";
 import { getCurrentWeek, getCurrentYear, getWeekDateRange } from "@/utils/dateUtils";
 import WeeklyDigestComponent from "@/components/WeeklyDigest";
@@ -224,43 +224,53 @@ const Index = () => {
             für studentenfreundliche Newsletter
           </p>
           
-          {/* Studenten-News Link */}
-          <Link to="/student-news">
-            <Button variant="outline" className="bg-blue-50 border-blue-200 hover:bg-blue-100">
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Top 10 für Studenten anzeigen
+          {/* Navigation Buttons */}
+          <div className="flex flex-wrap gap-3 justify-center mb-6">
+            <Link to="/student-news">
+              <Button variant="outline" className="bg-blue-50 border-blue-200 hover:bg-blue-100">
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Top 10 für Studenten anzeigen
+              </Button>
+            </Link>
+            
+            <Link to="/interactive-database">
+              <Button variant="outline" className="bg-purple-50 border-purple-200 hover:bg-purple-100">
+                <Database className="h-4 w-4 mr-2" />
+                KI-News Datenbank durchsuchen
+              </Button>
+            </Link>
+          </div>
+          
+          {/* Debug Buttons */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button 
+              onClick={testRssLoading}
+              disabled={debugLoading}
+              variant="outline" 
+              className="bg-orange-50 border-orange-200 hover:bg-orange-100"
+            >
+              {debugLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {debugLoading ? "Teste..." : "RSS Debug Test"}
             </Button>
-          </Link>
-          
-          {/* Debug RSS Loading Button */}
-          <Button 
-            onClick={testRssLoading}
-            disabled={debugLoading}
-            variant="outline" 
-            className="bg-orange-50 border-orange-200 hover:bg-orange-100"
-          >
-            {debugLoading ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            {debugLoading ? "Teste..." : "RSS Debug Test"}
-          </Button>
-          
-          {/* Debug Gemini API Button */}
-          <Button 
-            onClick={testGeminiAPI}
-            disabled={geminiTestLoading}
-            variant="outline" 
-            className="bg-red-50 border-red-200 hover:bg-red-100"
-          >
-            {geminiTestLoading ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            {geminiTestLoading ? "Teste..." : "Gemini API Test"}
-          </Button>
+            
+            <Button 
+              onClick={testGeminiAPI}
+              disabled={geminiTestLoading}
+              variant="outline" 
+              className="bg-red-50 border-red-200 hover:bg-red-100"
+            >
+              {geminiTestLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {geminiTestLoading ? "Teste..." : "Gemini API Test"}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">

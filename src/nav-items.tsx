@@ -1,4 +1,4 @@
-import { Home, Mail } from "lucide-react";
+import { Home, Mail, Database } from "lucide-react";
 
 export const navItems = [
   {
@@ -10,5 +10,10 @@ export const navItems = [
     title: "Newsletter",
     to: "/newsletter",
     icon: <Mail className="h-4 w-4" />,
+  },
+  {
+    title: "KI-Datenbank",
+    to: "/interactive-database",
+    icon: <Database className="h-4 w-4" />,
   },
 ];

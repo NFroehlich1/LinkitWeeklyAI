@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { RssItem } from "../types/newsTypes";
@@ -92,6 +91,30 @@ class RawArticleService {
       return data || [];
     } catch (error) {
       console.error("Error in getCurrentWeekArticles:", error);
+      throw error;
+    }
+  }
+
+  // Get all articles from database
+  public async getAllArticles(limit: number = 1000): Promise<DatabaseArticle[]> {
+    try {
+      console.log(`📋 Fetching up to ${limit} articles from database...`);
+      
+      const { data, error } = await supabase
+        .from('daily_raw_articles')
+        .select('*')
+        .order('pubdate', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error("Error fetching all articles:", error);
+        throw new Error(`Fehler beim Laden aller Artikel: ${error.message}`);
+      }
+
+      console.log(`✅ Fetched ${data?.length || 0} articles from database`);
+      return data || [];
+    } catch (error) {
+      console.error("Error in getAllArticles:", error);
       throw error;
     }
   }

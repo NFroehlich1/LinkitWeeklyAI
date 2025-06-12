@@ -6,6 +6,7 @@ import Index from "./pages/Index";
 import Newsletter from "./pages/Newsletter";
 import StudentNews from "./pages/StudentNews";
 import ArchiveQA from "./pages/ArchiveQA";
+import InteractiveDatabase from "./pages/InteractiveDatabase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/newsletter" element={<Newsletter />} />
           <Route path="/student-news" element={<StudentNews />} />
           <Route path="/archive-qa" element={<ArchiveQA />} />
+          <Route path="/interactive-database" element={<InteractiveDatabase />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

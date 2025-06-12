@@ -157,6 +157,22 @@ class NewsService {
     }
   }
 
+  // Get all articles from database
+  public async getAllStoredArticles(limit?: number): Promise<RssItem[]> {
+    try {
+      console.log("=== FETCHING ALL STORED ARTICLES ===");
+      const rawArticles = await this.rawArticleService.getAllArticles(limit);
+      const rssItems = rawArticles.map(article => this.rawArticleService.convertToRssItem(article));
+      
+      console.log(`✅ Found ${rssItems.length} stored articles in database`);
+      return rssItems;
+    } catch (error) {
+      console.error("Error fetching all stored articles:", error);
+      toast.error("Fehler beim Laden aller gespeicherten Artikel");
+      return [];
+    }
+  }
+
   // Get article statistics
   public async getArticleStats() {
     try {
