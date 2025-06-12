@@ -1,6 +1,6 @@
 # 🤖 LINKIT WEEKLY KI - Intelligenter Newsletter Generator
 
-Ein vollautomatisches Newsletter-System, das KI- und Tech-News sammelt, analysiert und intelligente Newsletter für Studierende und Tech-Enthusiasten generiert.
+Ein vollautomatisches Newsletter-System, das KI- und Tech-News sammelt, analysiert und intelligente Newsletter für Studierende generiert.
 
 
 ## 🚀 Hauptfunktionen
@@ -195,17 +195,6 @@ select cron.schedule(
 - ✅ **Error Handling**: Graceful Degradation bei API-Fehlern
 - ✅ **Fallback-Mechanismen**: Alternative Datenquellen
 
-## 🎯 Roadmap
-
-### Q1 2025
-- [ ] **Social Media Integration**: Automatisches Teilen auf LinkedIn/Twitter
-- [ ] **Advanced Analytics**: Engagement-Tracking für Newsletter
-- [ ] **Multi-Language Support**: Englische Newsletter-Generierung
-
-### Q2 2025
-- [ ] **Custom RSS Sources**: Benutzer können eigene Quellen hinzufügen
-- [ ] **AI Content Moderation**: Automatische Qualitätsbewertung
-- [ ] **Export Templates**: Verschiedene Newsletter-Formate
 
 ## 🤝 Contributing
 
@@ -230,11 +219,6 @@ Dieses Projekt ist unter der MIT License lizenziert - siehe [LICENSE](LICENSE) f
 - **Newsletter-Generierung funktioniert nicht**: Gemini API Key in Supabase konfigurieren
 - **Keine Artikel geladen**: RSS Debug Test ausführen
 - **Titel-Verbesserung fehlgeschlagen**: API-Quota überprüfen
-
-### Kontakt
-- **GitHub Issues**: Für Bug-Reports und Feature-Requests
-- **E-Mail**: [support@linkit-ka.de](mailto:support@linkit-ka.de)
-- **LinkedIn**: [LINKIT Karlsruhe](https://www.linkedin.com/company/linkit-karlsruhe)
 
 ---
 
