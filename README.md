@@ -2,32 +2,6 @@
 
 Ein vollautomatisches Newsletter-System, das KI- und Tech-News sammelt, analysiert und intelligente Newsletter für Studierende und Tech-Enthusiasten generiert.
 
-## ✨ Neueste Features
-
-### 🎯 **Top 10 Artikel-Ranking**
-- **Intelligenter Scoring-Algorithmus**: Bewertet Artikel nach Relevanz, Aktualität und Quelle
-- **Studenten-optimierte Ansicht**: Spezielle Filterung für Hochschul-relevante Inhalte
-- **Konsistente Reihenfolge**: Synchronisierte Artikel-Rankings zwischen allen Ansichten
-
-### 🧠 **KI-Powered Titel-Verbesserung**
-- **Manuelle Titel-Optimierung**: 📝-Button neben jedem Artikel für KI-basierte Titel-Verbesserung
-- **Persistente Speicherung**: Verbesserte Titel bleiben dauerhaft in der Datenbank gespeichert
-- **On-Demand Processing**: Spart API-Kosten durch benutzergesteuerte Verbesserungen
-
-### 🗑️ **Erweiterte Artikel-Verwaltung**
-- **Permanente Löschung**: Artikel vollständig aus der Datenbank entfernen
-- **Echtzeit-Synchronisation**: Änderungen werden sofort in allen Ansichten aktualisiert
-- **Unified Management**: Einheitliche Lösch-Funktionalität in allen Komponenten
-
-### 🎨 **Enhanced Glass Design**
-- **Moderne UI**: Glasmorphismus-Design mit Blur-Effekten und Transparenz
-- **Interactive Buttons**: Hover-Effekte und smooth Transitions
-- **Responsive Layout**: Optimiert für alle Bildschirmgrößen
-
-### 🔍 **Q&A System für Newsletter-Archive**
-- **Intelligente Suche**: KI-basierte Abfragen zu vergangenen Newslettern
-- **Chat-Interface**: Benutzerfreundliche Unterhaltung mit dem Newsletter-Archiv
-- **Kontextuelle Antworten**: Referenziert spezifische Newsletter und Inhalte
 
 ## 🚀 Hauptfunktionen
 
