@@ -1,92 +1,48 @@
 # 🤖 LINKIT WEEKLY KI - Intelligenter Newsletter Generator
 
-Ein vollautomatisches Newsletter-System, das KI- und Tech-News sammelt, analysiert und intelligente Newsletter für Studierende und Tech-Enthusiasten generiert.
+Ein Newsletter-System, das KI- und Tech-News sammelt, analysiert und intelligente Newsletter für Studierende und Tech-Enthusiasten generiert.
 
-## ✨ Neueste Features (2025)
+## ✨ Hauptfunktionen
 
-### 🎯 **Top 10 Artikel-Ranking**
-- **Intelligenter Scoring-Algorithmus**: Bewertet Artikel nach Relevanz, Aktualität und Quelle
-- **Studenten-optimierte Ansicht**: Spezielle Filterung für Hochschul-relevante Inhalte
-- **Konsistente Reihenfolge**: Synchronisierte Artikel-Rankings zwischen allen Ansichten
+### 📰 **News-Aggregation**
+- **RSS-Feed Integration**: The Decoder als Hauptquelle für KI- und Tech-News
+- **Wöchentliche Sammlung**: Artikel-Erfassung für aktuelle Kalenderwoche
+- **Duplikat-Vermeidung**: GUID-basierte Eindeutigkeit
 
-### 🧠 **KI-Powered Titel-Verbesserung**
-- **Manuelle Titel-Optimierung**: 📝-Button neben jedem Artikel für KI-basierte Titel-Verbesserung
-- **Persistente Speicherung**: Verbesserte Titel bleiben dauerhaft in der Datenbank gespeichert
-- **On-Demand Processing**: Spart API-Kosten durch benutzergesteuerte Verbesserungen
-
-### 🗑️ **Erweiterte Artikel-Verwaltung**
+### 🎯 **Artikel-Ranking System**
+- **Top 10 Auswahl**: Intelligenter Scoring-Algorithmus basierend auf Relevanz und Aktualität
+- **Manuelle Bearbeitung**: Drag & Drop Interface für Artikel-Reihenfolge
 - **Permanente Löschung**: Artikel vollständig aus der Datenbank entfernen
-- **Echtzeit-Synchronisation**: Änderungen werden sofort in allen Ansichten aktualisiert
-- **Unified Management**: Einheitliche Lösch-Funktionalität in allen Komponenten
+- **Studenten-Ansicht**: Spezielle Filterung für hochschulrelevante Inhalte
 
-### 🎨 **Enhanced Glass Design**
-- **Moderne UI**: Glasmorphismus-Design mit Blur-Effekten und Transparenz
-- **Interactive Buttons**: Hover-Effekte und smooth Transitions
-- **Responsive Layout**: Optimiert für alle Bildschirmgrößen
+### 🧠 **KI-Integration**
+- **Google Gemini API**: Newsletter-Generierung mit Gemini 1.5 Flash
+- **Titel-Verbesserung**: Manuelle KI-basierte Titel-Optimierung per Button
+- **Q&A System**: Intelligente Fragen zu Newsletter-Inhalten stellen
+- **Dynamische Fragevorschläge**: Adaptive Fragen basierend auf aktuellen Artikeln
 
-### 🔍 **Q&A System für Newsletter-Archive**
-- **Intelligente Suche**: KI-basierte Abfragen zu vergangenen Newslettern
-- **Chat-Interface**: Benutzerfreundliche Unterhaltung mit dem Newsletter-Archiv
-- **Kontextuelle Antworten**: Referenziert spezifische Newsletter und Inhalte
-
-## 🚀 Hauptfunktionen
-
-### 📰 **Automatische News-Aggregation**
-- **Multi-Source RSS**: The Decoder, TechCrunch, O'Reilly Radar und weitere
-- **Wöchentliche Sammlung**: Automatische Artikel-Erfassung für aktuelle Kalenderwoche
-- **Intelligent Filtering**: Fokus auf KI, Machine Learning, Startup-News und Tech-Trends
-- **Duplikat-Vermeidung**: GUID-basierte Eindeutigkeit verhindert doppelte Artikel
-
-### 🤖 **KI-gestützte Newsletter-Generierung**
-- **Google Gemini Integration**: Nutzt Gemini 1.5 Flash für intelligente Zusammenfassungen
-- **Faktentreue Generierung**: Strikt basierend auf echten Artikelinhalten ohne Halluzinationen
-- **Studentenfreundlicher Ton**: Optimiert für Hochschulgruppen und Tech-Studierende
-- **Strukturierte Ausgabe**: Konsistente Markdown-Formatierung mit LinkedIn-Integration
-
-### 📱 **Intuitive Benutzeroberfläche**
-- **Article Cards**: Expandierbare Karten mit KI-Zusammenfassungen und Metadaten
-- **View Toggles**: Wechsel zwischen "Top 10" und "Alle Artikel" Ansichten
-- **Real-time Updates**: Live-Aktualisierung ohne Seitenneuladen
-- **Mobile-First Design**: Vollständig responsive für alle Geräte
-
-### 📊 **Newsletter-Archiv & Management**
-- **Automatische Archivierung**: Generierte Newsletter werden automatisch gespeichert
-- **Suchfunktion**: Durchsuchung vergangener Newsletter nach Woche/Jahr
-- **Export-Optionen**: Newsletter als Markdown, HTML oder E-Mail-Template
-- **Abonnenten-Verwaltung**: E-Mail-Listen und Versand-Management
+### 🎨 **Benutzeroberfläche**
+- **Glass Design**: Moderne UI mit Blur-Effekten und Transparenz
+- **Responsive Layout**: Optimiert für Desktop und Mobile
+- **Interactive Cards**: Expandierbare Artikel-Karten mit Metadaten
+- **Dark/Light Theme**: Automatische Anpassung an Systemeinstellungen
 
 ## 🛠 Technologie-Stack
 
-### Frontend
-- **React 18** mit TypeScript für typsichere Entwicklung
-- **Vite** als Build-Tool für schnelle Entwicklung
-- **Tailwind CSS** für utility-first Styling
-- **shadcn/ui** für konsistente UI-Komponenten
-- **Lucide Icons** für moderne Icon-Sets
-
-### Backend & Services
-- **Supabase** als Backend-as-a-Service
-  - PostgreSQL Datenbank
-  - Real-time Subscriptions
-  - Edge Functions (Deno Runtime)
-  - Authentication & Row Level Security
-- **Google Gemini API** für KI-Textgenerierung
-- **RSS2JSON** für RSS-Feed-Verarbeitung
-
-### Architecture
-- **Edge Functions**: Serverless Deno-basierte API-Endpunkte
-- **TypeScript Services**: Modulare Business-Logic-Schicht
-- **Component-Based**: Wiederverwendbare React-Komponenten
-- **Progressive Enhancement**: Funktioniert auch bei JS-Deaktivierung
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Framework**: Tailwind CSS + shadcn/ui
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **KI-Service**: Google Gemini 1.5 Flash API
+- **RSS Processing**: RSS2JSON Service
 
 ## 📋 Voraussetzungen
 
-- **Node.js** ≥ 18.0.0
-- **npm** oder **yarn** Package Manager
-- **Supabase Account** (kostenlos verfügbar)
-- **Google Gemini API Key** (kostenlose Quota verfügbar)
+- Node.js ≥ 18.0.0
+- npm Package Manager
+- Supabase Account
+- Google Gemini API Key
 
-## 🚀 Installation & Setup
+## 🚀 Installation
 
 ### 1. Repository klonen
 ```bash
@@ -103,165 +59,105 @@ npm install
 ```bash
 npm run dev
 ```
-Die Anwendung ist unter **http://localhost:8082/** verfügbar.
+Die Anwendung läuft auf **http://localhost:8082/**
 
-### 4. Gemini API Key konfigurieren (für Newsletter-Generierung)
+### 4. Gemini API Key konfigurieren
 
 #### Option A: Supabase Dashboard
-1. Besuche [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Erstelle einen neuen API-Key
-3. Gehe zu [Supabase Dashboard](https://supabase.com/dashboard)
-4. Wähle Projekt `aggkhetcdjmggqjzelgd`
-5. **Edge Functions** → **Settings** → **Environment Variables**
-6. Füge hinzu: `GEMINI_API_KEY = AIzaSy...`
+1. API-Key erstellen: [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Supabase Dashboard öffnen
+3. Edge Functions → Settings → Environment Variables
+4. `GEMINI_API_KEY` hinzufügen
 
-#### Option B: Debug-Tools verwenden
-1. Öffne die Anwendung
-2. Klicke auf **"Gemini API Test"** (roter Button)
-3. Folge den Anweisungen zur API-Key-Konfiguration
+#### Option B: Debug-Tools
+1. Anwendung öffnen
+2. **"Gemini API Test"** (roter Button) klicken
+3. Anweisungen zur Konfiguration folgen
+
+## 📝 Verwendung
+
+### Artikel verwalten
+1. **"RSS Debug Test"** (orange): Neue Artikel laden
+2. **View Toggle**: Zwischen "Top 10" und "Alle Artikel" wechseln
+3. **📝 Button**: KI-Titel-Verbesserung für einzelne Artikel
+4. **🗑️ Button**: Artikel permanent löschen
+
+### Newsletter erstellen
+1. **"Top 10 bearbeiten"**: Artikel-Auswahl anpassen
+2. **Ranking anpassen**: Drag & Drop für Reihenfolge
+3. **"Newsletter erstellen"**: KI-generiert Newsletter aus ausgewählten Artikeln
+4. **Archivierung**: Newsletter werden automatisch gespeichert
+
+### Q&A System
+1. **"Fragen" Button**: Q&A Interface öffnen
+2. **Dynamische Vorschläge**: KI generiert relevante Fragen zu den Artikeln
+3. **🔄 Refresh**: Neue Fragevorschläge generieren
+4. **Chat Interface**: Natürlichsprachliche Fragen zu Newsletter-Inhalten
+
+### Debug-Tools
+- **RSS Debug Test** (orange): Testet RSS-Feed-Verbindung und lädt neue Artikel
+- **Gemini API Test** (rot): Überprüft KI-API-Konfiguration und Funktionalität
 
 ## 🏗 Projektstruktur
 
 ```
 src/
-├── components/              # React UI-Komponenten
-│   ├── ui/                 # shadcn/ui Basis-Komponenten
-│   ├── Header.tsx          # Hauptnavigation mit Glass-Design
-│   ├── NewsCard.tsx        # Artikel-Karten mit KI-Features
+├── components/
+│   ├── ui/                 # shadcn/ui Komponenten
+│   ├── Header.tsx          # Navigation
+│   ├── NewsCard.tsx        # Artikel-Karten
 │   ├── WeeklyDigest.tsx    # Newsletter-Generator
-│   ├── ArticleRanking.tsx  # Top-10-Auswahl mit Lösch-Funktion
-│   └── NewsletterArchiveQA.tsx # Q&A-System für Archive
-├── services/               # Business Logic Layer
-│   ├── NewsService.ts      # Haupt-News-Service
-│   ├── DecoderService.ts   # Gemini AI Integration
-│   ├── RawArticleService.ts # Datenbank-Operations
-│   └── NewsletterArchiveService.ts # Archiv-Management
-├── pages/                  # Hauptseiten-Komponenten
-│   ├── Index.tsx          # Hauptseite mit Artikel-Übersicht
-│   ├── StudentNews.tsx    # Studenten-optimierte Ansicht
-│   └── ArchiveQA.tsx      # Newsletter-Archiv mit Q&A
-├── types/                  # TypeScript-Definitionen
-└── utils/                  # Hilfsfunktionen
+│   ├── ArticleRanking.tsx  # Top-10-Verwaltung
+│   └── NewsletterAskAbout.tsx # Q&A-System
+├── services/
+│   ├── NewsService.ts      # News-Logik
+│   └── DecoderService.ts   # RSS-Integration
+├── pages/
+│   ├── Index.tsx          # Hauptseite
+│   ├── Newsletter.tsx     # Newsletter-Seite
+│   └── StudentNews.tsx    # Studenten-Ansicht
+└── types/                 # TypeScript-Definitionen
 
 supabase/
-├── functions/              # Edge Functions (Deno)
-│   ├── gemini-ai/         # KI-Integration (Titel, Summaries, Q&A)
-│   ├── fetch-rss/         # RSS-Feed-Verarbeitung
-│   ├── auto-generate-newsletter/ # Automatische Newsletter-Erstellung
-│   └── newsletter-*/      # E-Mail-Versand-Services
-└── config.toml            # Supabase-Konfiguration
+└── functions/             # Edge Functions
+    ├── gemini-ai/         # KI-Integration
+    └── fetch-rss/         # RSS-Verarbeitung
 ```
 
-## 📝 Verwendung
+## 🔧 Debug & Fehlerbehebung
 
-### Artikel-Management
-1. **RSS Debug Test**: Orange Button zum Testen der Artikel-Ladung
-2. **Artikel-Ansicht**: Toggle zwischen "Top 10" und "Alle Artikel"
-3. **Titel verbessern**: 📝-Button neben Artikeln für KI-Optimierung
-4. **Artikel löschen**: 🗑️-Button für permanente Entfernung
+### Häufige Probleme
 
-### Newsletter erstellen
-1. **Artikel auswählen**: "Top 10 bearbeiten" für manuelle Auswahl
-2. **Ranking anpassen**: Artikel per Drag & Drop sortieren
-3. **Löschen**: Unerwünschte Artikel permanent entfernen
-4. **Generieren**: "Newsletter erstellen" für KI-basierte Zusammenfassung
-5. **Archivieren**: Automatische Speicherung im Newsletter-Archiv
+**Newsletter-Generierung funktioniert nicht**
+- Gemini API Key in Supabase konfigurieren
+- Roten "Gemini API Test" Button verwenden
 
-### Q&A mit Newsletter-Archiv
-1. **Archiv öffnen**: Navigation zu "Newsletter Archiv & Q&A"
-2. **Frage stellen**: Natürlichsprachliche Abfragen zu vergangenen Newslettern
-3. **Kontextuelle Antworten**: KI referenziert spezifische Newsletter-Inhalte
+**Keine neuen Artikel**
+- Orange "RSS Debug Test" Button klicken
+- Browser-Konsole auf Fehler prüfen
 
-### Studenten-Ansicht
-1. **Top 10 für Studenten**: Spezielle Filterung für Hochschul-relevante Artikel
-2. **Konsistente Rankings**: Gleiche Basis-Algorithmen wie Haupt-Newsletter
-3. **Relevanz-Filter**: Fokus auf Karriere, Programmierung, KI-Trends
+**Titel-Verbesserung fehlschlägt**
+- API-Key überprüfen
+- Gemini API-Quota kontrollieren
 
-## 🔄 Automatisierung
-
-### RSS-Feed-Sammlung
-```bash
-# Manuelle Auslösung über Debug-Button
-# Oder automatisch via Supabase Cron Jobs (täglich 10:00, 16:00, 22:00 MEZ)
-```
-
-### Newsletter-Generierung
-```bash
-# Automatische wöchentliche Generierung
-# Konfigurierbar über Supabase Dashboard → Integrations → Cron
-```
-
-### Tägliche Artikel-Ladung (Setup)
-```sql
--- Über Supabase Dashboard → Database → SQL Editor
-select cron.schedule(
-  'fetch-articles-morning',
-  '0 8 * * *',  -- 10:00 MEZ
-  'https://aggkhetcdjmggqjzelgd.supabase.co/functions/v1/cron-trigger'
-);
-```
-
-## 🛡 Sicherheit & Performance
-
-### API-Sicherheit
-- ✅ **Environment Variables**: Sensitive Daten in Supabase Secrets
-- ✅ **CORS-Konfiguration**: Sichere Cross-Origin-Requests
-- ✅ **Rate Limiting**: Schutz vor API-Missbrauch
-- ✅ **JWT-Authentication**: Optional für erweiterte Sicherheit
-
-### Performance-Optimierungen
-- ✅ **Lazy Loading**: Komponenten laden on-demand
-- ✅ **Memoization**: React.memo für teure Berechnungen
-- ✅ **Edge Functions**: Globale CDN-Distribution
-- ✅ **Database Indexing**: Optimierte Abfragen für schnelle Suche
-
-### Datenqualität
-- ✅ **Duplikat-Vermeidung**: GUID-basierte Eindeutigkeit
-- ✅ **Content Validation**: Automatische Qualitätsprüfung
-- ✅ **Error Handling**: Graceful Degradation bei API-Fehlern
-- ✅ **Fallback-Mechanismen**: Alternative Datenquellen
-
-## 🎯 Roadmap
-
-### Q1 2025
-- [ ] **Social Media Integration**: Automatisches Teilen auf LinkedIn/Twitter
-- [ ] **Advanced Analytics**: Engagement-Tracking für Newsletter
-- [ ] **Multi-Language Support**: Englische Newsletter-Generierung
-
-### Q2 2025
-- [ ] **Custom RSS Sources**: Benutzer können eigene Quellen hinzufügen
-- [ ] **AI Content Moderation**: Automatische Qualitätsbewertung
-- [ ] **Export Templates**: Verschiedene Newsletter-Formate
+### Console Logging
+Die Anwendung nutzt ausführliches Console-Logging für Debug-Zwecke:
+- RSS-Feed-Status
+- API-Antworten
+- Artikel-Verarbeitung
+- Fehlerdetails
 
 ## 🤝 Contributing
 
-1. **Fork** das Repository
-2. **Feature Branch** erstellen: `git checkout -b feature/amazing-feature`
-3. **Commit** Änderungen: `git commit -m 'Add amazing feature'`
-4. **Push** zum Branch: `git push origin feature/amazing-feature`
-5. **Pull Request** öffnen
+1. Repository forken
+2. Feature Branch erstellen
+3. Änderungen committen
+4. Pull Request öffnen
 
 ## 📄 Lizenz
 
-Dieses Projekt ist unter der MIT License lizenziert - siehe [LICENSE](LICENSE) für Details.
-
-## 🆘 Support
-
-### Debug-Tools
-- **RSS Debug Test**: Orange Button zum Testen der Artikel-Ladung
-- **Gemini API Test**: Roter Button zum Testen der KI-Integration
-- **Browser Console**: Detaillierte Logs für Fehlerdiagnose
-
-### Häufige Probleme
-- **Newsletter-Generierung funktioniert nicht**: Gemini API Key in Supabase konfigurieren
-- **Keine Artikel geladen**: RSS Debug Test ausführen
-- **Titel-Verbesserung fehlgeschlagen**: API-Quota überprüfen
-
-### Kontakt
-- **GitHub Issues**: Für Bug-Reports und Feature-Requests
-- **E-Mail**: [support@linkit-ka.de](mailto:support@linkit-ka.de)
-- **LinkedIn**: [LINKIT Karlsruhe](https://www.linkedin.com/company/linkit-karlsruhe)
+MIT License - siehe [LICENSE](LICENSE) für Details.
 
 ---
 
-**Entwickelt mit ❤️ von LINKIT Karlsruhe für die Tech-Community**
+**Entwickelt für die LINKIT Karlsruhe Community**
