@@ -38,9 +38,21 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
   const isCustomArticle = 
     item.sourceName === 'Eigener' || 
     item.sourceName === 'Custom' || 
+    item.sourceName === 'Eigener Import' ||
+    item.sourceName === 'Custom Import' ||
     (item as any).isCustom === true ||
     item.guid?.includes('custom-') ||
     false;
+
+  // Translate sourceName to German for display
+  const getDisplaySourceName = (sourceName: string) => {
+    const translations: { [key: string]: string } = {
+      'Custom': 'Eigener',
+      'Custom Import': 'Eigener Import',
+      'Manual Import': 'Manueller Import'
+    };
+    return translations[sourceName] || sourceName;
+  };
 
   // Show loading skeleton when article is being generated
   if (isLoading) {
@@ -338,7 +350,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
           <span className="text-sm text-muted-foreground">{formatDate(pubDate)}</span>
           {sourceName && !isCustomArticle && (
             <div>
-              <Badge variant="outline">{sourceName}</Badge>
+              <Badge variant="outline">{getDisplaySourceName(sourceName)}</Badge>
             </div>
           )}
         </div>

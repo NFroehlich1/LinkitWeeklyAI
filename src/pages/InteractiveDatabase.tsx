@@ -194,6 +194,19 @@ const InteractiveDatabase = () => {
       }
     });
 
+    // Fallback: If no cluster was found but article contains general AI terms, assign to a default cluster
+    if (!bestCluster || bestScore === 0) {
+      const generalAiKeywords = ['ki', 'ai', 'artificial', 'intelligence', 'künstliche', 'intelligenz', 'machine learning', 'deep learning'];
+      const hasAiContent = generalAiKeywords.some(keyword => text.includes(keyword));
+      
+      if (hasAiContent) {
+        // Default to "Use Cases" for general AI content
+        bestCluster = "Use Cases";
+        bestScore = 1;
+        matchedTags = ["AI"];
+      }
+    }
+
     // Calculate overall relevance score
     const relevanceScore = calculateRelevanceScore(article);
     

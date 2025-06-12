@@ -50,6 +50,21 @@ class RawArticleService {
         processed: false
       }));
 
+      // Check for duplicates before saving
+      let duplicateCount = 0;
+      for (const article of dbArticles) {
+        if (article.guid) {
+          const exists = await this.articleExists(article.guid);
+          if (exists) {
+            duplicateCount++;
+          }
+        }
+      }
+
+      if (duplicateCount > 0) {
+        console.log(`⚠️ Found ${duplicateCount} duplicate articles that will be skipped`);
+      }
+
       // Use upsert to avoid duplicates based on guid
       const { data, error } = await supabase
         .from('daily_raw_articles')
@@ -64,7 +79,14 @@ class RawArticleService {
         throw new Error(`Fehler beim Speichern der Artikel: ${error.message}`);
       }
 
-      console.log(`✅ Successfully saved/updated ${data?.length || 0} articles`);
+      const savedCount = data?.length || 0;
+      const skippedCount = articles.length - savedCount;
+      
+      console.log(`✅ Successfully saved ${savedCount} new articles${skippedCount > 0 ? `, skipped ${skippedCount} duplicates` : ''}`);
+      
+      if (skippedCount > 0) {
+        toast.info(`${savedCount} neue Artikel gespeichert, ${skippedCount} Duplikate übersprungen`);
+      }
       
     } catch (error) {
       console.error("Error in saveArticles:", error);
@@ -192,6 +214,37 @@ class RawArticleService {
     } catch (error) {
       console.error("Error getting article stats:", error);
       return { total: 0, thisWeek: 0, processed: 0, unprocessed: 0 };
+    }
+  }
+
+  // Check if an article with the given URL/GUID already exists
+  public async articleExists(url: string): Promise<boolean> {
+    try {
+      console.log(`🔍 Checking if article exists with URL/GUID: ${url}`);
+      
+      const { data, error } = await supabase
+        .from('daily_raw_articles')
+        .select('id, title, link')
+        .or(`guid.eq.${url},link.eq.${url}`)
+        .limit(1);
+
+      if (error) {
+        console.error("Error checking for duplicate article:", error);
+        return false; // In case of error, allow the operation
+      }
+
+      const exists = data && data.length > 0;
+      
+      if (exists) {
+        console.log(`⚠️ Duplicate found: "${data[0].title}" (${data[0].link})`);
+      } else {
+        console.log(`✅ No duplicate found for: ${url}`);
+      }
+      
+      return exists;
+    } catch (error) {
+      console.error("Error in articleExists:", error);
+      return false; // In case of error, allow the operation
     }
   }
 

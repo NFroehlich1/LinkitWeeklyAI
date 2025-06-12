@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +40,18 @@ const CustomArticleImporter = ({ onArticleAdded, newsService }: CustomArticleImp
     try {
       const serviceToUse = newsService || new NewsService();
       
+      // Check if article already exists
+      console.log("🔍 Checking for duplicate article...");
+      const exists = await serviceToUse.checkArticleExists(url);
+      
+      if (exists) {
+        toast.warning("⚠️ Ein Artikel mit dieser URL existiert bereits in der Datenbank");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("✅ No duplicate found, proceeding with article creation...");
+      
       // Fetch metadata from URL
       const metadata = await serviceToUse.fetchArticleMetadata(url);
       
@@ -69,11 +80,18 @@ const CustomArticleImporter = ({ onArticleAdded, newsService }: CustomArticleImp
         pubDate: new Date().toISOString(),
         guid: url, // Use URL as GUID for custom articles
         categories: ["Manuell hinzugefügt"],
-        sourceName: "Custom Import",
-        creator: "Manual Import",
+        sourceName: "Eigener Import",
+        creator: "Eigener Import",
         content: formattedContent, // Use the formatted content with proper Markdown
         imageUrl: metadata.imageUrl
       };
+
+      console.log("📝 Created custom article:", {
+        title: customArticle.title,
+        link: customArticle.link,
+        guid: customArticle.guid,
+        sourceName: customArticle.sourceName
+      });
 
       onArticleAdded(customArticle);
       
@@ -83,7 +101,7 @@ const CustomArticleImporter = ({ onArticleAdded, newsService }: CustomArticleImp
       setCustomDescription("");
       setUseCustomData(false);
       
-      toast.success("Artikel erfolgreich hinzugefügt");
+      toast.success("✅ Artikel erfolgreich hinzugefügt");
     } catch (error) {
       console.error("Error importing article:", error);
       toast.error("Fehler beim Importieren des Artikels");
@@ -100,7 +118,7 @@ const CustomArticleImporter = ({ onArticleAdded, newsService }: CustomArticleImp
           Eigenen Artikel hinzufügen
         </CardTitle>
         <CardDescription>
-          Artikel über URL importieren oder manuell erstellen
+          Artikel über URL importieren oder manuell erstellen. Duplikate werden automatisch erkannt und verhindert.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

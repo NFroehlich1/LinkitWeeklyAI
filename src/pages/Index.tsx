@@ -149,13 +149,36 @@ const Index = () => {
     }
   };
 
-  const handleCustomArticleAdded = (article: RssItem) => {
-    setCustomArticles(prev => [...prev, article]);
-    setShowImporter(false);
-    // Refresh the digest with the new article
-    setTimeout(() => {
-      fetchNews();
-    }, 100);
+  const handleCustomArticleAdded = async (article: RssItem) => {
+    // Check if article with same URL/GUID already exists in the local list
+    const isDuplicate = customArticles.some(existingArticle => 
+      existingArticle.guid === article.guid || 
+      existingArticle.link === article.link
+    );
+
+    if (isDuplicate) {
+      toast.warning("⚠️ Ein Artikel mit dieser URL ist bereits in der lokalen Liste vorhanden");
+      return;
+    }
+
+    try {
+      // Save custom article to database
+      console.log("💾 Saving custom article to database:", article.title);
+      await newsService.saveCustomArticle(article);
+      
+      setCustomArticles(prev => [...prev, article]);
+      setShowImporter(false);
+      
+      toast.success("✅ Artikel erfolgreich hinzugefügt und gespeichert");
+      
+      // Refresh the digest with the new article
+      setTimeout(() => {
+        fetchNews();
+      }, 100);
+    } catch (error) {
+      console.error("Error saving custom article:", error);
+      toast.error("❌ Fehler beim Speichern des Artikels in der Datenbank");
+    }
   };
 
   const improveArticleTitle = async (articleGuid: string) => {

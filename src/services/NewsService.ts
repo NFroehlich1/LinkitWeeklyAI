@@ -183,6 +183,28 @@ class NewsService {
     }
   }
   
+  // Check if an article with the given URL already exists
+  public async checkArticleExists(url: string): Promise<boolean> {
+    try {
+      return await this.rawArticleService.articleExists(url);
+    } catch (error) {
+      console.error("Error checking if article exists:", error);
+      return false;
+    }
+  }
+  
+  // Save a single custom article to the database
+  public async saveCustomArticle(article: RssItem): Promise<void> {
+    try {
+      console.log("💾 NewsService: Saving custom article to database:", article.title);
+      await this.rawArticleService.saveArticles([article]);
+      console.log("✅ NewsService: Custom article saved successfully");
+    } catch (error) {
+      console.error("❌ NewsService: Error saving custom article:", error);
+      throw error;
+    }
+  }
+  
   // Generate AI summary for a specific article
   public async generateArticleSummary(article: RssItem): Promise<string | null> {
     try {
