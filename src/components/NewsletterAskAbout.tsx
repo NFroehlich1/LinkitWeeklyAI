@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { RssItem } from "@/types/newsTypes";
-import { MessageSquare, Send, RefreshCw, Bot, User } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from 'react-markdown';
@@ -25,6 +25,167 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [dynamicQuestions, setDynamicQuestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    generateDynamicQuestions();
+  }, [articles, newsletterContent]);
+
+  const generateDynamicQuestions = () => {
+    console.log("🔄 Generating new dynamic questions...");
+    
+    if (articles.length === 0) {
+      setDynamicQuestions([
+        "Was sind die wichtigsten KI-Trends diese Woche?",
+        "Welche neuen Technologien werden diskutiert?",
+        "Welche Unternehmen sind besonders aktiv?",
+        "Welche Entwicklungen sind für Studierende relevant?"
+      ]);
+      return;
+    }
+
+    const companies = new Set<string>();
+    const technologies = new Set<string>();
+    const topics = new Set<string>();
+    const keyTerms = new Set<string>();
+
+    // Enhanced detection
+    articles.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      
+      // Company detection (expanded)
+      ['openai', 'google', 'microsoft', 'meta', 'tesla', 'nvidia', 'apple', 'amazon', 'anthropic', 'midjourney', 'stability ai', 'deepmind', 'xai', 'mistral', 'cohere'].forEach(company => {
+        if (text.includes(company.toLowerCase())) companies.add(company);
+      });
+      
+      // Technology detection (expanded)
+      ['ki', 'ai', 'artificial intelligence', 'machine learning', 'deep learning', 'llm', 'gpt', 'transformer', 'neural', 'robotik', 'automation', 'chatbot', 'computer vision', 'nlp', 'generative ai', 'agi'].forEach(tech => {
+        if (text.includes(tech.toLowerCase())) technologies.add(tech.toUpperCase());
+      });
+      
+      // Topics detection (expanded)
+      if (text.includes('startup') || text.includes('funding') || text.includes('investment') || text.includes('finanzierung')) topics.add('Startups & Investitionen');
+      if (text.includes('ethik') || text.includes('regulation') || text.includes('gesetz') || text.includes('datenschutz')) topics.add('KI-Ethik & Regulierung');
+      if (text.includes('job') || text.includes('karriere') || text.includes('ausbildung') || text.includes('studium')) topics.add('Karriere & Bildung');
+      if (text.includes('sicherheit') || text.includes('security') || text.includes('privacy') || text.includes('cyber')) topics.add('Sicherheit');
+      if (text.includes('gesundheit') || text.includes('medizin') || text.includes('health') || text.includes('medical')) topics.add('Medizin & Gesundheit');
+      if (text.includes('energie') || text.includes('klima') || text.includes('nachhaltigkeit') || text.includes('environment')) topics.add('Umwelt & Energie');
+      
+      // Extract key terms
+      const words = text.split(/\s+/);
+      words.forEach(word => {
+        if (word.length > 6 && !['artikel', 'unternehmen', 'entwicklung', 'technologie'].includes(word)) {
+          keyTerms.add(word);
+        }
+      });
+    });
+
+    // Question templates for variation
+    const questionTemplates = {
+      company: [
+        "Was wird über {company} berichtet?",
+        "Welche Entwicklungen zeigt {company}?",
+        "Wie positioniert sich {company} im Markt?",
+        "Was sind die neuesten Nachrichten zu {company}?",
+        "Welche Strategie verfolgt {company}?"
+      ],
+      comparison: [
+        "Wie unterscheiden sich die Ansätze von {comp1} und {comp2}?",
+        "Was sind die Gemeinsamkeiten zwischen {comp1} und {comp2}?",
+        "Wer ist führend: {comp1} oder {comp2}?",
+        "Welche Konkurrenz besteht zwischen {comp1} und {comp2}?"
+      ],
+      technology: [
+        "Welche Entwicklungen gibt es bei {tech}?",
+        "Wie wird {tech} eingesetzt?",
+        "Was sind die Vorteile von {tech}?",
+        "Welche Herausforderungen gibt es bei {tech}?",
+        "Wie verändert {tech} die Branche?"
+      ],
+      topic: [
+        "Was wird zu {topic} berichtet?",
+        "Welche Trends zeigen sich bei {topic}?",
+        "Wie entwickelt sich {topic}?",
+        "Welche Auswirkungen hat {topic}?",
+        "Was sollte man über {topic} wissen?"
+      ],
+      general: [
+        "Was sind die wichtigsten Erkenntnisse aus den Artikeln?",
+        "Welche praktischen Tipps kann ich ableiten?",
+        "Welche Trends lassen sich erkennen?",
+        "Was ist besonders relevant für Studierende?",
+        "Welche Artikel sind am interessantesten?",
+        "Fasse die wichtigsten Punkte zusammen",
+        "Welche Entwicklungen sind überraschend?",
+        "Was sollte ich als Nächstes lesen?",
+        "Welche langfristigen Auswirkungen sind zu erwarten?",
+        "Wie beeinflussen diese Entwicklungen den Arbeitsmarkt?",
+        "Welche Geschäftsmodelle entstehen?",
+        "Was bedeuten diese Trends für die Zukunft?"
+      ],
+      newsletter: [
+        "Was sind die Kernaussagen dieses Newsletters?",
+        "Welche Artikel werden besonders hervorgehoben?",
+        "Wie hängen die verschiedenen Artikel zusammen?",
+        "Was ist das übergreifende Thema?",
+        "Welche Schlüsselerkenntnisse vermittelt der Newsletter?"
+      ]
+    };
+
+    let questions: string[] = [];
+
+    // Add newsletter-specific questions if content is available
+    if (newsletterContent) {
+      const newsletterQuestions = questionTemplates.newsletter;
+      questions.push(newsletterQuestions[Math.floor(Math.random() * newsletterQuestions.length)]);
+    }
+
+    // Add company-specific questions
+    const companyArray = Array.from(companies);
+    if (companyArray.length > 0) {
+      const randomCompany = companyArray[Math.floor(Math.random() * companyArray.length)];
+      const template = questionTemplates.company[Math.floor(Math.random() * questionTemplates.company.length)];
+      questions.push(template.replace('{company}', randomCompany));
+
+      // Add comparison question if multiple companies
+      if (companyArray.length > 1) {
+        const shuffled = [...companyArray].sort(() => 0.5 - Math.random());
+        const template = questionTemplates.comparison[Math.floor(Math.random() * questionTemplates.comparison.length)];
+        questions.push(template.replace('{comp1}', shuffled[0]).replace('{comp2}', shuffled[1]));
+      }
+    }
+
+    // Add technology questions
+    const techArray = Array.from(technologies);
+    if (techArray.length > 0) {
+      const randomTech = techArray[Math.floor(Math.random() * techArray.length)];
+      const template = questionTemplates.technology[Math.floor(Math.random() * questionTemplates.technology.length)];
+      questions.push(template.replace('{tech}', randomTech));
+    }
+
+    // Add topic questions
+    const topicArray = Array.from(topics);
+    if (topicArray.length > 0) {
+      const randomTopic = topicArray[Math.floor(Math.random() * topicArray.length)];
+      const template = questionTemplates.topic[Math.floor(Math.random() * questionTemplates.topic.length)];
+      questions.push(template.replace('{topic}', randomTopic));
+    }
+
+    // Always add some general questions (randomly selected)
+    const generalQuestions = [...questionTemplates.general].sort(() => 0.5 - Math.random()).slice(0, 3);
+    questions.push(...generalQuestions);
+
+    // Shuffle and limit to 6 questions
+    const finalQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, 6);
+
+    console.log("✨ Generated dynamic questions:", finalQuestions);
+    console.log("🏢 Detected companies:", Array.from(companies));
+    console.log("🔬 Detected technologies:", Array.from(technologies));
+    console.log("📊 Detected topics:", Array.from(topics));
+    
+    setDynamicQuestions(finalQuestions);
+    toast.success("Neue Fragevorschläge generiert!");
+  };
 
   const getWeekNumber = (date: Date): number => {
     const startDate = new Date(date.getFullYear(), 0, 1);
@@ -283,31 +444,57 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
         {/* Suggested Questions */}
         {chatHistory.length === 0 && (
           <div className="border-t pt-4">
-            <p className="text-sm font-medium text-gray-700 mb-3">Beispiel-Fragen:</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {newsletterContent ? [
-                "Was sind die Kernaussagen des Newsletters?",
-                "Welche Artikel werden im Newsletter hervorgehoben?",
-                "Welche KI-Trends werden im Newsletter diskutiert?",
-                "Gibt es praktische Tipps für Studierende im Newsletter?"
-              ] : [
-                "Was sind die wichtigsten KI-Trends diese Woche?",
-                "Welche Unternehmen werden am häufigsten erwähnt?",
-                "Gibt es neue Entwicklungen bei ChatGPT oder OpenAI?",
-                "Welche Artikel behandeln Startups und Innovation?"
-              ].map((suggestion, index) => (
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <p className="text-sm font-medium text-gray-700">
+                Intelligente Fragevorschläge:
+              </p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={generateDynamicQuestions}
+                className="h-6 px-2 text-xs ml-auto"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+              {dynamicQuestions.map((suggestion, index) => (
                 <Button
                   key={index}
                   variant="ghost"
                   size="sm"
-                  className="text-left text-xs p-2 h-auto whitespace-normal justify-start"
+                  className="text-left text-xs p-2 h-auto whitespace-normal justify-start hover:bg-blue-50 border border-transparent hover:border-blue-200"
                   onClick={() => setQuestion(suggestion)}
                   disabled={isLoading}
                 >
+                  <Lightbulb className="h-3 w-3 mr-1 flex-shrink-0 text-blue-500" />
                   "{suggestion}"
                 </Button>
               ))}
             </div>
+
+            {/* Article context info */}
+            {articles.length > 0 && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-xs text-blue-700 mb-2">
+                  📊 Basierend auf {articles.length} Artikeln {newsletterContent ? 'und Newsletter-Inhalt' : 'dieses Newsletters'}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {articles.slice(0, 3).map((article, index) => (
+                    <span key={index} className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded">
+                      {article.title.substring(0, 25)}...
+                    </span>
+                  ))}
+                  {articles.length > 3 && (
+                    <span className="text-xs text-blue-600">
+                      +{articles.length - 3} weitere
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

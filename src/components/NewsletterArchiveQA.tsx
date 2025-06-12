@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, MessageSquare, Archive, Bot, User, Calendar, Hash, RefreshCw, Send } from 'lucide-react';
+import { Search, MessageSquare, Archive, Bot, User, Calendar, Hash, RefreshCw, Send, TrendingUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import NewsService, { RssItem } from '@/services/NewsService';
+import { getCurrentWeek, getCurrentYear } from '@/utils/dateUtils';
 
 interface Newsletter {
   id: string;
@@ -38,6 +40,7 @@ interface ChatMessage {
 
 const NewsletterArchiveQA = () => {
   const { toast } = useToast();
+  const [newsService] = useState(new NewsService());
   const [searchQuery, setSearchQuery] = useState('');
   const [qaQuery, setQaQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('');
@@ -47,6 +50,9 @@ const NewsletterArchiveQA = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isAsking, setIsAsking] = useState(false);
   const [activeTab, setActiveTab] = useState('search');
+  const [currentWeekArticles, setCurrentWeekArticles] = useState<RssItem[]>([]);
+  const [dynamicQuestions, setDynamicQuestions] = useState<string[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   // Generate year options (current year and previous years)
   const currentYear = new Date().getFullYear();
@@ -54,6 +60,177 @@ const NewsletterArchiveQA = () => {
   
   // Generate week options (1-52)
   const weekOptions = Array.from({ length: 52 }, (_, i) => i + 1);
+
+  // Static fallback questions
+  const fallbackQuestions = [
+    "Welche wichtigen KI-Entwicklungen wurden 2024 berichtet?",
+    "Was wurde über ChatGPT und OpenAI geschrieben?",
+    "Welche neuen Machine Learning Tools wurden vorgestellt?",
+    "Gab es Berichte über ethische KI-Themen?"
+  ];
+
+  useEffect(() => {
+    loadCurrentWeekArticlesAndGenerateQuestions();
+  }, []);
+
+  const loadCurrentWeekArticlesAndGenerateQuestions = async () => {
+    setIsLoadingQuestions(true);
+    console.log("🔄 Loading current week articles for dynamic questions...");
+    
+    try {
+      // Load current week's top articles
+      let allItems: RssItem[] = [];
+      try {
+        allItems = await newsService.getStoredArticlesForCurrentWeek();
+        if (allItems.length === 0) {
+          console.log("📰 No stored articles found, fetching fresh ones...");
+          allItems = await newsService.fetchNews();
+        }
+      } catch (error) {
+        console.warn("Error getting articles for questions:", error);
+        allItems = await newsService.fetchNews();
+      }
+
+      // Filter and rank current week articles
+      const currentWeekItems = newsService.filterCurrentWeekNews(allItems);
+      const rankedArticles = currentWeekItems
+        .map(article => ({
+          ...article,
+          relevanceScore: calculateRelevanceScore(article)
+        }))
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 10); // Top 10
+
+      console.log(`📊 Found ${rankedArticles.length} ranked articles for question generation`);
+      console.log("🔝 Top 3 articles:", rankedArticles.slice(0, 3).map(a => a.title));
+
+      setCurrentWeekArticles(rankedArticles);
+
+      // Generate dynamic questions based on current articles
+      if (rankedArticles.length > 0) {
+        const questions = generateDynamicQuestions(rankedArticles);
+        console.log("❓ Generated dynamic questions:", questions);
+        setDynamicQuestions(questions);
+      } else {
+        console.log("⚠️ No articles available, using fallback questions");
+        setDynamicQuestions(fallbackQuestions);
+      }
+
+    } catch (error) {
+      console.error('Error loading articles for questions:', error);
+      setDynamicQuestions(fallbackQuestions);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  const calculateRelevanceScore = (article: RssItem): number => {
+    let score = 0;
+    
+    const relevantKeywords = [
+      'KI', 'AI', 'künstliche intelligenz', 'machine learning', 'deep learning',
+      'chatgpt', 'openai', 'google', 'microsoft', 'meta', 'tesla', 'nvidia',
+      'startup', 'tech', 'innovation', 'digitalisierung', 'automation',
+      'robotik', 'algorithmus', 'daten', 'software', 'hardware'
+    ];
+    
+    const titleLower = article.title.toLowerCase();
+    const descLower = (article.description || '').toLowerCase();
+    
+    relevantKeywords.forEach(keyword => {
+      if (titleLower.includes(keyword.toLowerCase())) score += 3;
+      if (descLower.includes(keyword.toLowerCase())) score += 1;
+    });
+    
+    const daysOld = Math.floor((Date.now() - new Date(article.pubDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysOld <= 1) score += 5;
+    else if (daysOld <= 3) score += 3;
+    else if (daysOld <= 7) score += 1;
+    
+    if (article.sourceName === 'Eigener') score += 2;
+    
+    const reliableSources = ['techcrunch', 'wired', 'ars technica', 'the verge'];
+    const sourceLower = (article.sourceName || '').toLowerCase();
+    if (reliableSources.some(source => sourceLower.includes(source))) score += 2;
+    
+    return Math.max(score, 1);
+  };
+
+  const generateDynamicQuestions = (articles: RssItem[]): string[] => {
+    const questions: string[] = [];
+    const currentWeek = getCurrentWeek();
+    const currentYear = getCurrentYear();
+    
+    // Extract key topics from article titles
+    const topics = new Set<string>();
+    const companies = new Set<string>();
+    const technologies = new Set<string>();
+
+    articles.forEach(article => {
+      const title = article.title.toLowerCase();
+      
+      // Detect companies
+      if (title.includes('openai') || title.includes('chatgpt')) companies.add('OpenAI');
+      if (title.includes('google') || title.includes('gemini')) companies.add('Google');
+      if (title.includes('microsoft') || title.includes('copilot')) companies.add('Microsoft');
+      if (title.includes('meta') || title.includes('facebook')) companies.add('Meta');
+      if (title.includes('tesla') || title.includes('musk')) companies.add('Tesla');
+      if (title.includes('nvidia')) companies.add('NVIDIA');
+      if (title.includes('apple')) companies.add('Apple');
+      
+      // Detect technologies
+      if (title.includes('ki') || title.includes('ai') || title.includes('artificial intelligence')) technologies.add('KI/AI');
+      if (title.includes('machine learning') || title.includes('ml')) technologies.add('Machine Learning');
+      if (title.includes('deep learning') || title.includes('neural')) technologies.add('Deep Learning');
+      if (title.includes('llm') || title.includes('language model')) technologies.add('Large Language Models');
+      if (title.includes('roboter') || title.includes('robot')) technologies.add('Robotik');
+      if (title.includes('blockchain') || title.includes('crypto')) technologies.add('Blockchain');
+      if (title.includes('quantum')) technologies.add('Quantum Computing');
+      
+      // Detect general topics
+      if (title.includes('startup') || title.includes('funding') || title.includes('investment')) topics.add('Startup-Investments');
+      if (title.includes('ethik') || title.includes('regulation') || title.includes('gesetz')) topics.add('KI-Ethik und Regulierung');
+      if (title.includes('job') || title.includes('karriere') || title.includes('ausbildung')) topics.add('Tech-Karriere');
+      if (title.includes('sicherheit') || title.includes('security') || title.includes('privacy')) topics.add('IT-Sicherheit');
+    });
+
+    // Generate questions based on current week's content
+    questions.push(`Welche wichtigen Tech-News gab es in KW ${currentWeek}/${currentYear}?`);
+
+    // Company-based questions
+    Array.from(companies).slice(0, 2).forEach(company => {
+      questions.push(`Was wurde diese Woche über ${company} berichtet?`);
+    });
+
+    // Technology-based questions
+    Array.from(technologies).slice(0, 2).forEach(tech => {
+      questions.push(`Welche Entwicklungen gab es bei ${tech} in den letzten Newslettern?`);
+    });
+
+    // Topic-based questions
+    Array.from(topics).slice(0, 2).forEach(topic => {
+      questions.push(`Was wurde zu ${topic} in vergangenen Newslettern diskutiert?`);
+    });
+
+    // Add some general comparison questions if we have diverse content
+    if (companies.size > 1) {
+      questions.push(`Wie unterscheiden sich die KI-Strategien der großen Tech-Unternehmen?`);
+    }
+    
+    if (articles.length >= 5) {
+      questions.push(`Welche Trends zeichnen sich aus den aktuellen Top-Artikeln ab?`);
+    }
+
+    // Ensure we have at least 4 questions, fallback to static ones if needed
+    while (questions.length < 4 && questions.length < fallbackQuestions.length) {
+      const fallbackIndex = questions.length;
+      if (fallbackIndex < fallbackQuestions.length) {
+        questions.push(fallbackQuestions[fallbackIndex]);
+      }
+    }
+
+    return questions.slice(0, 6); // Limit to 6 questions max
+  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -508,23 +685,103 @@ const NewsletterArchiveQA = () => {
 
                 {chatHistory.length === 0 && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800 font-medium mb-2">Beispiel-Fragen:</p>
-                    <div className="space-y-1">
-                      {[
-                        "Welche wichtigen KI-Entwicklungen wurden 2024 berichtet?",
-                        "Was wurde über ChatGPT und OpenAI geschrieben?",
-                        "Welche neuen Machine Learning Tools wurden vorgestellt?",
-                        "Gab es Berichte über ethische KI-Themen?"
-                      ].map((suggestion, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setQaQuery(suggestion)}
-                          className="block text-xs text-blue-700 hover:text-blue-900 hover:underline text-left"
-                        >
-                          "{suggestion}"
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-blue-600" />
+                        <p className="text-sm text-blue-800 font-medium">
+                          {isLoadingQuestions ? 'Lade aktuelle Fragevorschläge...' : 'Aktuelle Fragevorschläge:'}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={loadCurrentWeekArticlesAndGenerateQuestions}
+                        disabled={isLoadingQuestions}
+                        className="h-6 px-2 text-xs"
+                      >
+                        {isLoadingQuestions ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                      </Button>
                     </div>
+                    
+                    {isLoadingQuestions ? (
+                      <div className="space-y-1">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="h-4 bg-blue-100 rounded animate-pulse" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {dynamicQuestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setQaQuery(suggestion)}
+                            className="block text-xs text-blue-700 hover:text-blue-900 hover:underline text-left w-full p-1 rounded hover:bg-blue-100"
+                          >
+                            "{suggestion}"
+                          </button>
+                        ))}
+                        
+                        {currentWeekArticles.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            <p className="text-xs text-blue-600 mb-1">
+                              📊 Basierend auf {currentWeekArticles.length} Top-Artikeln der KW {getCurrentWeek()}/{getCurrentYear()}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {currentWeekArticles.slice(0, 3).map((article, index) => (
+                                <span key={index} className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded">
+                                  {article.title.substring(0, 30)}...
+                                </span>
+                              ))}
+                            </div>
+                            
+                            {/* Debug Info - zeigt erkannte Keywords */}
+                            {process.env.NODE_ENV === 'development' && (
+                              <details className="text-xs text-blue-600">
+                                <summary className="cursor-pointer">🔍 Debug: Erkannte Themen</summary>
+                                <div className="mt-1 space-y-1">
+                                  {(() => {
+                                    const companies = new Set<string>();
+                                    const technologies = new Set<string>();
+                                    
+                                    currentWeekArticles.forEach(article => {
+                                      const title = article.title.toLowerCase();
+                                      if (title.includes('openai') || title.includes('chatgpt')) companies.add('OpenAI');
+                                      if (title.includes('google') || title.includes('gemini')) companies.add('Google');
+                                      if (title.includes('microsoft')) companies.add('Microsoft');
+                                      if (title.includes('meta')) companies.add('Meta');
+                                      if (title.includes('ki') || title.includes('ai')) technologies.add('KI/AI');
+                                      if (title.includes('machine learning')) technologies.add('ML');
+                                    });
+                                    
+                                    return (
+                                      <>
+                                        {companies.size > 0 && (
+                                          <div>🏢 Unternehmen: {Array.from(companies).join(', ')}</div>
+                                        )}
+                                        {technologies.size > 0 && (
+                                          <div>⚡ Technologien: {Array.from(technologies).join(', ')}</div>
+                                        )}
+                                        <div>📅 Letztes Update: {new Date().toLocaleTimeString()}</div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </details>
+                            )}
+                          </div>
+                        )}
+                        
+                        {currentWeekArticles.length === 0 && (
+                          <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                            ⚠️ Keine aktuellen Artikel verfügbar - verwende Standard-Fragen
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
