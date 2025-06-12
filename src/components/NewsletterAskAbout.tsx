@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { RssItem } from "@/types/newsTypes";
-import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from 'react-markdown';
@@ -239,8 +239,9 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
       
       contextualPrompt += `ARTIKEL-DETAILS:\n`;
       articlesContext.forEach((article, index) => {
-        contextualPrompt += `${index + 1}. ${article.title}\n`;
+        contextualPrompt += `Artikel ${index + 1}: ${article.title}\n`;
         contextualPrompt += `   Quelle: ${article.sourceName}\n`;
+        contextualPrompt += `   Link: ${article.link}\n`;
         contextualPrompt += `   Beschreibung: ${article.description}\n`;
         if (article.content && article.content !== article.description) {
           contextualPrompt += `   Inhalt: ${article.content.substring(0, 300)}...\n`;
@@ -248,7 +249,11 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
         contextualPrompt += `\n`;
       });
       
-      contextualPrompt += `\nGib eine detaillierte, hilfreiche Antwort auf Deutsch. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'} Wenn möglich, nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
+      contextualPrompt += `\nGib eine detaillierte, hilfreiche Antwort auf Deutsch. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'} 
+
+WICHTIG: Wenn du auf spezifische Artikel verweist, verwende IMMER das Format "Artikel X" (z.B. "Artikel 1", "Artikel 2"), damit diese automatisch zu klickbaren Links werden. Beispiel: "Wie in Artikel 3 beschrieben..." oder "Artikel 1 und Artikel 5 zeigen...".
+
+Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
       // Use qa-with-newsletter action for proper Q&A functionality
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
@@ -331,6 +336,55 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
     }
   };
 
+  // Function to convert article references to clickable links
+  const processArticleLinks = (content: string): string => {
+    // Pattern to match article references like "Artikel 1", "Artikel 2", etc.
+    const articlePattern = /\b(?:Artikel|Article)\s+(\d+)\b/gi;
+    
+    return content.replace(articlePattern, (match, articleNumber) => {
+      const index = parseInt(articleNumber) - 1; // Convert to 0-based index
+      
+      if (index >= 0 && index < articles.length) {
+        const article = articles[index];
+        // Create markdown link with article title and URL
+        return `[${match}: "${article.title}"](${article.link})`;
+      }
+      
+      return match; // Return original if article not found
+    });
+  };
+
+  // Custom ReactMarkdown component with enhanced link handling
+  const MarkdownWithLinks = ({ content }: { content: string }) => {
+    const processedContent = processArticleLinks(content);
+    
+    return (
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-700">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
+          li: ({ children }) => <li className="text-gray-700">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+          a: ({ href, children, ...props }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline decoration-blue-600/30 hover:decoration-blue-800 transition-colors"
+              title={`Öffne ${href} in neuem Tab`}
+              {...props}
+            >
+              {children}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    );
+  };
+
   return (
     <Card className="mt-6 shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/80">
       <CardHeader className="border-b bg-white/70 backdrop-blur-sm">
@@ -384,16 +438,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
                   }`}>
                     {message.role === 'assistant' ? (
                       <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-700">{children}</p>,
-                            ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-                            li: ({ children }) => <li className="text-gray-700">{children}</li>,
-                            strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
+                        <MarkdownWithLinks content={message.content} />
                       </div>
                     ) : (
                       <p className="text-sm">{message.content}</p>

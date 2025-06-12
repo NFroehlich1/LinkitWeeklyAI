@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, MessageSquare, Archive, Bot, User, Calendar, Hash, RefreshCw, Send, TrendingUp } from 'lucide-react';
+import { Search, MessageSquare, Archive, Bot, User, Calendar, Hash, RefreshCw, Send, TrendingUp, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import NewsService, { RssItem } from '@/services/NewsService';
 import { getCurrentWeek, getCurrentYear } from '@/utils/dateUtils';
@@ -231,6 +231,97 @@ const NewsletterArchiveQA = () => {
     }
 
     return questions.slice(0, 6); // Limit to 6 questions max
+  };
+
+  // Function to convert newsletter references to clickable links
+  const processNewsletterLinks = (content: string, relatedNewsletters?: Newsletter[]): string => {
+    if (!relatedNewsletters || relatedNewsletters.length === 0) {
+      return content;
+    }
+
+    // Pattern to match newsletter references like "Newsletter 2024/KW12", "KW 34", etc.
+    const newsletterPattern = /\b(?:Newsletter\s+)?(\d{4})\/KW\s?(\d{1,2})\b/gi;
+    
+    return content.replace(newsletterPattern, (match, year, week) => {
+      const foundNewsletter = relatedNewsletters.find(nl => 
+        nl.year === parseInt(year) && nl.week_number === parseInt(week)
+      );
+      
+      if (foundNewsletter) {
+        // Create markdown link with newsletter title
+        return `[${match}: "${foundNewsletter.title}"](#newsletter-${foundNewsletter.id})`;
+      }
+      
+      return match; // Return original if newsletter not found
+    });
+  };
+
+  // Custom ReactMarkdown component with enhanced link handling for newsletters
+  const MarkdownWithNewsletterLinks = ({ content, relatedNewsletters }: { content: string, relatedNewsletters?: Newsletter[] }) => {
+    const processedContent = processNewsletterLinks(content, relatedNewsletters);
+    
+    return (
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-700">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
+          li: ({ children }) => <li className="text-gray-700">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+          a: ({ href, children, ...props }) => {
+            // Handle newsletter links specially
+            if (href?.startsWith('#newsletter-')) {
+              const newsletterId = href.replace('#newsletter-', '');
+              const newsletter = relatedNewsletters?.find(nl => nl.id === newsletterId);
+              
+              return (
+                <button
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline decoration-blue-600/30 hover:decoration-blue-800 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (newsletter) {
+                      // Scroll to newsletter in search results or show details
+                      const element = document.getElementById(`newsletter-${newsletterId}`);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        element.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+                        setTimeout(() => {
+                          element.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+                        }, 2000);
+                      }
+                      toast({
+                        title: "Newsletter gefunden",
+                        description: `"${newsletter.title}" - ${newsletter.year}/KW${newsletter.week_number}`
+                      });
+                    }
+                  }}
+                  title={newsletter ? `Zeige Newsletter: ${newsletter.title}` : 'Newsletter anzeigen'}
+                  {...props}
+                >
+                  {children}
+                  <Archive className="h-3 w-3" />
+                </button>
+              );
+            }
+            
+            // Regular external links
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline decoration-blue-600/30 hover:decoration-blue-800 transition-colors"
+                title={`Öffne ${href} in neuem Tab`}
+                {...props}
+              >
+                {children}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            );
+          }
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    );
   };
 
   const handleSearch = async () => {
@@ -658,16 +749,7 @@ const NewsletterArchiveQA = () => {
                         }`}>
                           {message.role === 'assistant' ? (
                             <div className="prose prose-sm max-w-none">
-                              <ReactMarkdown
-                                components={{
-                                  p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-700">{children}</p>,
-                                  ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-                                  li: ({ children }) => <li className="text-gray-700">{children}</li>,
-                                  strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>
-                                }}
-                              >
-                                {message.content}
-                              </ReactMarkdown>
+                              <MarkdownWithNewsletterLinks content={message.content} relatedNewsletters={message.relatedNewsletters} />
                               
                               {/* Show related newsletters */}
                               {message.relatedNewsletters && message.relatedNewsletters.length > 0 && (
