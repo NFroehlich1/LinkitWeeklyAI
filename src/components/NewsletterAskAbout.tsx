@@ -8,6 +8,7 @@ import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb } from
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from 'react-markdown';
+import VoiceInput from './VoiceInput';
 
 interface NewsletterAskAboutProps {
   articles: RssItem[];
@@ -316,6 +317,20 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
     }
   };
 
+  // Add voice input handler
+  const handleVoiceTranscript = (transcript: string) => {
+    console.log("🎤 Voice transcript received:", transcript);
+    
+    // Append to existing question or set as new question
+    if (question.trim()) {
+      setQuestion(prev => prev + " " + transcript);
+      toast.success("Spracheingabe hinzugefügt!");
+    } else {
+      setQuestion(transcript);
+      toast.success("Frage per Sprache erfasst!");
+    }
+  };
+
   return (
     <Card className="mt-6 shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/80">
       <CardHeader className="border-b bg-white/70 backdrop-blur-sm">
@@ -393,7 +408,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
           </div>
         )}
 
-        {/* Question Input */}
+        {/* Question Input with Voice Support */}
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="outline" className="text-xs">
@@ -413,8 +428,8 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
             <Textarea
               id="question"
               placeholder={newsletterContent 
-                ? "Z.B. 'Welche KI-Trends werden im Newsletter diskutiert?' oder 'Fasse die wichtigsten Punkte des Newsletters zusammen'"
-                : "Z.B. 'Welche KI-Trends werden in den Artikeln diskutiert?' oder 'Fasse die wichtigsten Punkte zu OpenAI zusammen'"
+                ? "Z.B. 'Welche KI-Trends werden im Newsletter diskutiert?' oder nutzen Sie die Spracheingabe..."
+                : "Z.B. 'Welche KI-Trends werden in den Artikeln diskutiert?' oder nutzen Sie die Spracheingabe..."
               }
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -438,6 +453,13 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
               )}
               {isLoading ? "Analysiere..." : "Frage stellen"}
             </Button>
+            
+            {/* Voice Input Button */}
+            <VoiceInput
+              onTranscript={handleVoiceTranscript}
+              isDisabled={isLoading}
+              language="de-DE"
+            />
           </div>
         </div>
 

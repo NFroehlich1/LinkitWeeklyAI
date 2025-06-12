@@ -12,6 +12,7 @@ import { Search, MessageSquare, Archive, Bot, User, Calendar, Hash, RefreshCw, S
 import ReactMarkdown from 'react-markdown';
 import NewsService, { RssItem } from '@/services/NewsService';
 import { getCurrentWeek, getCurrentYear } from '@/utils/dateUtils';
+import VoiceInput from './VoiceInput';
 
 interface Newsletter {
   id: string;
@@ -426,6 +427,43 @@ const NewsletterArchiveQA = () => {
     }
   };
 
+  // Voice input handlers
+  const handleSearchVoiceTranscript = (transcript: string) => {
+    console.log("🎤 Search voice transcript:", transcript);
+    
+    if (searchQuery.trim()) {
+      setSearchQuery(prev => prev + " " + transcript);
+      toast({
+        title: "Spracheingabe hinzugefügt",
+        description: "Spracheingabe zur Suche hinzugefügt"
+      });
+    } else {
+      setSearchQuery(transcript);
+      toast({
+        title: "Suchbegriff erkannt",
+        description: "Suchbegriff per Sprache erfasst"
+      });
+    }
+  };
+
+  const handleQAVoiceTranscript = (transcript: string) => {
+    console.log("🎤 Q&A voice transcript:", transcript);
+    
+    if (qaQuery.trim()) {
+      setQaQuery(prev => prev + " " + transcript);
+      toast({
+        title: "Spracheingabe hinzugefügt",
+        description: "Spracheingabe zur Frage hinzugefügt"
+      });
+    } else {
+      setQaQuery(transcript);
+      toast({
+        title: "Frage erkannt",
+        description: "Frage per Sprache erfasst"
+      });
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/80">
@@ -523,7 +561,7 @@ const NewsletterArchiveQA = () => {
               </TabsTrigger>
             </TabsList>
 
-            {/* Search Tab */}
+            {/* Search Tab with Voice Input */}
             <TabsContent value="search" className="space-y-4">
               <div className="flex gap-2">
                 <Input
@@ -541,6 +579,13 @@ const NewsletterArchiveQA = () => {
                   )}
                   {isSearching ? 'Suche...' : 'Suchen'}
                 </Button>
+                
+                {/* Voice Input for Search */}
+                <VoiceInput
+                  onTranscript={handleSearchVoiceTranscript}
+                  isDisabled={isSearching}
+                  language="de-DE"
+                />
               </div>
 
               {/* Search Results */}
@@ -588,7 +633,7 @@ const NewsletterArchiveQA = () => {
               )}
             </TabsContent>
 
-            {/* Q&A Tab */}
+            {/* Q&A Tab with Voice Input */}
             <TabsContent value="qa" className="space-y-4">
               {/* Chat History */}
               {chatHistory.length > 0 && (
@@ -653,13 +698,13 @@ const NewsletterArchiveQA = () => {
                 </div>
               )}
 
-              {/* Q&A Input */}
+              {/* Q&A Input with Voice Support */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-gray-700">
                   Stellen Sie eine Frage zu den Newsletter-Archiven:
                 </label>
                 <Textarea
-                  placeholder="Z.B. 'Welche KI-Trends wurden in den letzten Monaten diskutiert?' oder 'Was wurde über OpenAI GPT-4 berichtet?'"
+                  placeholder="Z.B. 'Welche KI-Trends wurden in den letzten Monaten diskutiert?' oder nutzen Sie die Spracheingabe..."
                   value={qaQuery}
                   onChange={(e) => setQaQuery(e.target.value)}
                   onKeyPress={(e) => handleKeyPress(e, 'qa')}
@@ -681,6 +726,13 @@ const NewsletterArchiveQA = () => {
                     )}
                     {isAsking ? 'Analysiere Archive...' : 'Frage stellen'}
                   </Button>
+                  
+                  {/* Voice Input for Q&A */}
+                  <VoiceInput
+                    onTranscript={handleQAVoiceTranscript}
+                    isDisabled={isAsking}
+                    language="de-DE"
+                  />
                 </div>
 
                 {chatHistory.length === 0 && (
