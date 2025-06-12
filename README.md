@@ -2,7 +2,7 @@
 
 Ein vollautomatisches Newsletter-System, das KI- und Tech-News sammelt, analysiert und intelligente Newsletter für Studierende und Tech-Enthusiasten generiert.
 
-## ✨ Neueste Features (2025)
+## ✨ Neueste Features
 
 ### 🎯 **Top 10 Artikel-Ranking**
 - **Intelligenter Scoring-Algorithmus**: Bewertet Artikel nach Relevanz, Aktualität und Quelle
