@@ -54,6 +54,7 @@ export const MOCK_NEWS_ITEMS: RssItem[] = [
 ];
 
 // Default RSS sources - Korrigierte Feed-URLs
+// Default RSS sources - Erweiterte Auswahl mit mehr aktiven Quellen
 export const DEFAULT_RSS_SOURCES: RssSource[] = [
   {
     url: "https://the-decoder.de/feed/",
@@ -61,18 +62,48 @@ export const DEFAULT_RSS_SOURCES: RssSource[] = [
     enabled: true
   },
   {
+    url: "https://www.heise.de/rss/news-atom.xml",
+    name: "Heise Online",
+    enabled: true
+  },
+  {
+    url: "https://www.golem.de/rss.php",
+    name: "Golem.de",
+    enabled: true
+  },
+  {
+    url: "https://t3n.de/feed/",
+    name: "t3n Magazine",
+    enabled: true
+  },
+  {
+    url: "https://techcrunch.com/feed/",
+    name: "TechCrunch",
+    enabled: true
+  },
+  {
+    url: "https://www.wired.com/feed/rss",
+    name: "Wired",
+    enabled: false
+  },
+  {
     url: "https://feeds.feedburner.com/oreilly/radar",
     name: "O'Reilly Radar",
     enabled: false
   },
   {
-    url: "https://techcrunch.com/feed/",
-    name: "TechCrunch",
+    url: "https://www.technologyreview.com/feed/",
+    name: "MIT Technology Review",
+    enabled: true
+  },
+  {
+    url: "https://www.zdnet.de/feed/",
+    name: "ZDNet Deutschland",
     enabled: false
   },
   {
-    url: "https://www.wired.com/feed/rss",
-    name: "Wired",
+    url: "https://www.computerbild.de/artikel/cb-News-Software-23879283.html",
+    name: "Computer Bild - Software News",
     enabled: false
   }
 ];

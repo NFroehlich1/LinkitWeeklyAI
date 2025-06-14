@@ -8,6 +8,7 @@ import Newsletter from "./pages/Newsletter";
 import StudentNews from "./pages/StudentNews";
 import ArchiveQA from "./pages/ArchiveQA";
 import InteractiveDatabase from "./pages/InteractiveDatabase";
+import RssFeedManager from "./pages/RssFeedManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => {
               <Route path="/student-news" element={<StudentNews />} />
               <Route path="/archive-qa" element={<ArchiveQA />} />
               <Route path="/interactive-database" element={<InteractiveDatabase />} />
+              <Route path="/rss-manager" element={<RssFeedManager />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

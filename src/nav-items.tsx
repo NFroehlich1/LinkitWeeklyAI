@@ -1,4 +1,4 @@
-import { Home, Mail, Database } from "lucide-react";
+import { Home, Mail, Database, Settings } from "lucide-react";
 
 export const navItems = [
   {
@@ -18,5 +18,11 @@ export const navItems = [
     titleKey: "nav.database",
     to: "/interactive-database",
     icon: <Database className="h-4 w-4" />,
+  },
+  {
+    title: "RSS Verwaltung",
+    titleKey: "nav.rss",
+    to: "/rss-manager",
+    icon: <Settings className="h-4 w-4" />,
   },
 ];

@@ -5,6 +5,7 @@ import { Calendar, Rss, RefreshCw, BarChart3, TrendingUp, AlertCircle, CheckCirc
 import { toast } from "sonner";
 import WeeklyDigest from "@/components/WeeklyDigest";
 import RssSourceManager from "@/components/RssSourceManager";
+import PopularRssFeeds from "@/components/PopularRssFeeds";
 import NewsService, { WeeklyDigest as WeeklyDigestType } from "@/services/NewsService";
 import NewsCardSkeleton from "@/components/NewsCardSkeleton";
 
@@ -142,22 +143,35 @@ const NewsContentTab = ({ newsService }: NewsContentTabProps) => {
         {/* Mobile: Stack vertically */}
         <div className="space-y-6">
           {newsService && (
-            <RssSourceManager 
-              sources={newsService.getRssSources()}
-              onAddSource={(url, name) => newsService.addRssSource(url, name)}
-              onRemoveSource={(url) => newsService.removeRssSource(url)}
-              onToggleSource={(url, enabled) => {
-                const result = newsService.toggleRssSource(url, enabled);
-                if (result) {
+            <>
+              <RssSourceManager 
+                sources={newsService.getRssSources()}
+                onAddSource={(url, name) => newsService.addRssSource(url, name)}
+                onRemoveSource={(url) => newsService.removeRssSource(url)}
+                onToggleSource={(url, enabled) => {
+                  const result = newsService.toggleRssSource(url, enabled);
+                  if (result) {
+                    setCurrentWeekDigest(null);
+                  }
+                  return result;
+                }}
+                onRefresh={() => {
                   setCurrentWeekDigest(null);
-                }
-                return result;
-              }}
-              onRefresh={() => {
-                setCurrentWeekDigest(null);
-                handleRssSourceChange();
-              }}
-            />
+                  handleRssSourceChange();
+                }}
+              />
+              
+              <PopularRssFeeds
+                onAddFeed={(url, name) => {
+                  const success = newsService.addRssSource(url, name);
+                  if (success) {
+                    handleRssSourceChange();
+                  }
+                  return success;
+                }}
+                existingUrls={newsService.getRssSources().map(source => source.url)}
+              />
+            </>
           )}
 
           {/* Article Stats Card - Mobile */}
@@ -286,22 +300,35 @@ const NewsContentTab = ({ newsService }: NewsContentTabProps) => {
       <div className="hidden lg:grid lg:grid-cols-3 lg:gap-6">
         <div className="lg:col-span-1 space-y-4">
           {newsService && (
-            <RssSourceManager 
-              sources={newsService.getRssSources()}
-              onAddSource={(url, name) => newsService.addRssSource(url, name)}
-              onRemoveSource={(url) => newsService.removeRssSource(url)}
-              onToggleSource={(url, enabled) => {
-                const result = newsService.toggleRssSource(url, enabled);
-                if (result) {
+            <>
+              <RssSourceManager 
+                sources={newsService.getRssSources()}
+                onAddSource={(url, name) => newsService.addRssSource(url, name)}
+                onRemoveSource={(url) => newsService.removeRssSource(url)}
+                onToggleSource={(url, enabled) => {
+                  const result = newsService.toggleRssSource(url, enabled);
+                  if (result) {
+                    setCurrentWeekDigest(null);
+                  }
+                  return result;
+                }}
+                onRefresh={() => {
                   setCurrentWeekDigest(null);
-                }
-                return result;
-              }}
-              onRefresh={() => {
-                setCurrentWeekDigest(null);
-                handleRssSourceChange();
-              }}
-            />
+                  handleRssSourceChange();
+                }}
+              />
+              
+              <PopularRssFeeds
+                onAddFeed={(url, name) => {
+                  const success = newsService.addRssSource(url, name);
+                  if (success) {
+                    handleRssSourceChange();
+                  }
+                  return success;
+                }}
+                existingUrls={newsService.getRssSources().map(source => source.url)}
+              />
+            </>
           )}
 
           {/* Article Stats Card - Desktop */}
