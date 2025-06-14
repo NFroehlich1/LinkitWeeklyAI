@@ -2,7 +2,7 @@ import { RssSource } from '../types/newsTypes';
 import { toast } from "sonner";
 
 /**
- * Service for managing RSS sources - fokussiert auf The Decoder
+ * Service for managing RSS sources - supports any valid RSS feed
  */
 class RssSourceService {
   private rssSources: RssSource[] = [];
@@ -21,11 +21,12 @@ class RssSourceService {
         this.rssSources = [
           {
             name: "The Decoder - KI News",
-            url: "https://the-decoder.de/feed/", // Corrected URL
+            url: "https://the-decoder.de/feed/",
             enabled: true
           }
         ];
         this.saveRssSources();
+        console.log("✅ Standard RSS-Quelle (The Decoder) initialisiert");
       } else {
         const parsedSources = JSON.parse(savedSources);
         
@@ -86,7 +87,7 @@ class RssSourceService {
     return this.rssSources.filter(source => source.enabled);
   }
   
-  // Add a new RSS source - only allow The Decoder URLs
+  // Add a new RSS source - now allows any valid RSS feed URL
   public addRssSource(url: string, name: string): boolean {
     // Basic URL validation
     try {
@@ -96,11 +97,8 @@ class RssSourceService {
       return false;
     }
     
-    // Automatisch /feed/ anhängen für The Decoder URLs
-    let feedUrl = url;
-    if (url.includes('the-decoder.de') && !url.includes('/feed/')) {
-      feedUrl = url.endsWith('/') ? url + 'feed/' : url + '/feed/';
-    }
+    // Smart RSS URL detection and correction
+    let feedUrl = this.normalizeRssUrl(url);
     
     // Check if source already exists
     if (this.rssSources.some(source => source.url === feedUrl)) {
@@ -108,15 +106,93 @@ class RssSourceService {
       return false;
     }
     
+    // Generate a default name if none provided
+    const sourceName = name.trim() || this.generateSourceName(feedUrl);
+    
     this.rssSources.push({
       url: feedUrl,
-      name: name || "The Decoder",
+      name: sourceName,
       enabled: true
     });
     
     this.saveRssSources();
-    toast.success(`Neue RSS-Quelle "${name || "The Decoder"}" hinzugefügt`);
+    toast.success(`Neue RSS-Quelle "${sourceName}" hinzugefügt`);
     return true;
+  }
+
+  // Normalize RSS URL - add common RSS paths if needed
+  private normalizeRssUrl(url: string): string {
+    let feedUrl = url.trim();
+    
+    // Remove trailing slash for processing
+    const baseUrl = feedUrl.replace(/\/$/, '');
+    
+    // If URL already contains common RSS paths, return as is
+    const rssPatterns = ['/feed', '/rss', '/feed.xml', '/rss.xml', '/atom.xml', '/index.xml'];
+    if (rssPatterns.some(pattern => feedUrl.includes(pattern))) {
+      return feedUrl;
+    }
+    
+    // For known domains, add the correct RSS path
+    if (baseUrl.includes('the-decoder.de')) {
+      return baseUrl + '/feed/';
+    } else if (baseUrl.includes('techcrunch.com')) {
+      return baseUrl + '/feed/';
+    } else if (baseUrl.includes('wired.com')) {
+      return baseUrl + '/feed/rss';
+    } else if (baseUrl.includes('oreilly.com')) {
+      return 'https://feeds.feedburner.com/oreilly/radar';
+    } else if (baseUrl.includes('heise.de')) {
+      return baseUrl + '/rss/news-atom.xml';
+    } else if (baseUrl.includes('golem.de')) {
+      return baseUrl + '/rss.php';
+    } else if (baseUrl.includes('t3n.de')) {
+      return baseUrl + '/feed/';
+    } else if (baseUrl.includes('stackoverflow.com') && baseUrl.includes('/questions/tagged/')) {
+      return baseUrl + '?tab=newest&sort=newest&pagesize=50';
+    }
+    
+    // For unknown domains, try common RSS paths
+    // First try /feed/ (most common)
+    return baseUrl + '/feed/';
+  }
+
+  // Generate a default source name from URL
+  private generateSourceName(url: string): string {
+    try {
+      const domain = new URL(url).hostname.replace('www.', '');
+      
+      // Known domain names
+      const knownDomains: { [key: string]: string } = {
+        'the-decoder.de': 'The Decoder',
+        'techcrunch.com': 'TechCrunch',
+        'wired.com': 'Wired',
+        'oreilly.com': 'O\'Reilly Radar',
+        'heise.de': 'Heise Online',
+        'golem.de': 'Golem.de',
+        't3n.de': 't3n Magazine',
+        'stackoverflow.com': 'Stack Overflow',
+        'reddit.com': 'Reddit',
+        'medium.com': 'Medium',
+        'dev.to': 'DEV Community'
+      };
+      
+      // Check for known domains
+      for (const [domainKey, displayName] of Object.entries(knownDomains)) {
+        if (domain.includes(domainKey)) {
+          return displayName;
+        }
+      }
+      
+      // Generate name from domain
+      return domain.split('.')[0]
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+        
+    } catch (error) {
+      return "Unbekannte Quelle";
+    }
   }
   
   // Remove an RSS source

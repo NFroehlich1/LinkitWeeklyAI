@@ -23,10 +23,7 @@ serve(async (req) => {
     console.log(`Fetching RSS from: ${url}`);
 
     // Determine the correct RSS feed URL
-    let rssUrl = url;
-    if (url === "https://the-decoder.de/" || url === "https://the-decoder.de") {
-      rssUrl = "https://the-decoder.de/feed/";
-    }
+    let rssUrl = normalizeRssUrl(url);
 
     console.log(`Using RSS URL: ${rssUrl}`);
 
@@ -246,14 +243,81 @@ function extractImageUrl(item: any): string {
   return `https://picsum.photos/800/600?random=${Math.floor(Math.random() * 1000)}`;
 }
 
+// Normalize RSS URL - add common RSS paths if needed
+function normalizeRssUrl(url: string): string {
+  let feedUrl = url.trim();
+  
+  // Remove trailing slash for processing
+  const baseUrl = feedUrl.replace(/\/$/, '');
+  
+  // If URL already contains common RSS paths, return as is
+  const rssPatterns = ['/feed', '/rss', '/feed.xml', '/rss.xml', '/atom.xml', '/index.xml'];
+  if (rssPatterns.some(pattern => feedUrl.includes(pattern))) {
+    return feedUrl;
+  }
+  
+  // For known domains, add the correct RSS path
+  if (baseUrl.includes('the-decoder.de')) {
+    return baseUrl + '/feed/';
+  } else if (baseUrl.includes('techcrunch.com')) {
+    return baseUrl + '/feed/';
+  } else if (baseUrl.includes('wired.com')) {
+    return baseUrl + '/feed/rss';
+  } else if (baseUrl.includes('oreilly.com')) {
+    return 'https://feeds.feedburner.com/oreilly/radar';
+  } else if (baseUrl.includes('heise.de')) {
+    return baseUrl + '/rss/news-atom.xml';
+  } else if (baseUrl.includes('golem.de')) {
+    return baseUrl + '/rss.php';
+  } else if (baseUrl.includes('t3n.de')) {
+    return baseUrl + '/feed/';
+  } else if (baseUrl.includes('dev.to')) {
+    return baseUrl + '/feed';
+  } else if (baseUrl.includes('medium.com')) {
+    return baseUrl + '/feed';
+  } else if (baseUrl.includes('reddit.com') && baseUrl.includes('/r/')) {
+    return baseUrl + '.rss';
+  }
+  
+  // For unknown domains, try common RSS paths
+  // First try /feed/ (most common)
+  return baseUrl + '/feed/';
+}
+
 function getSourceName(url: string): string {
   try {
-    const domain = new URL(url).hostname;
-    if (domain.includes('the-decoder.de')) return 'The Decoder';
-    if (domain.includes('techcrunch.com')) return 'TechCrunch';
-    if (domain.includes('wired.com')) return 'Wired';
-    if (domain.includes('oreilly.com')) return "O'Reilly Radar";
-    return domain;
+    const domain = new URL(url).hostname.replace('www.', '');
+    
+    // Known domain names
+    const knownDomains: { [key: string]: string } = {
+      'the-decoder.de': 'The Decoder',
+      'techcrunch.com': 'TechCrunch', 
+      'wired.com': 'Wired',
+      'oreilly.com': 'O\'Reilly Radar',
+      'heise.de': 'Heise Online',
+      'golem.de': 'Golem.de',
+      't3n.de': 't3n Magazine',
+      'stackoverflow.com': 'Stack Overflow',
+      'reddit.com': 'Reddit',
+      'medium.com': 'Medium',
+      'dev.to': 'DEV Community',
+      'hackernews.com': 'Hacker News',
+      'news.ycombinator.com': 'Hacker News'
+    };
+    
+    // Check for known domains
+    for (const [domainKey, displayName] of Object.entries(knownDomains)) {
+      if (domain.includes(domainKey)) {
+        return displayName;
+      }
+    }
+    
+    // Generate name from domain
+    return domain.split('.')[0]
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+      
   } catch {
     return 'Unbekannte Quelle';
   }

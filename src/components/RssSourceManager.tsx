@@ -145,9 +145,9 @@ const RssSourceManager = ({
           <DialogContent className="w-[95vw] max-w-md mx-auto">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">RSS-Quelle hinzufügen</DialogTitle>
-              <DialogDescription className="text-sm sm:text-base">
-                Fügen Sie eine neue RSS-Quelle hinzu, um Nachrichten zu importieren.
-              </DialogDescription>
+                          <DialogDescription className="text-sm sm:text-base">
+              Fügen Sie jede beliebige RSS-Quelle hinzu. Die URL wird automatisch für bekannte Seiten optimiert.
+            </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">

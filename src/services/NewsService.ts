@@ -26,23 +26,23 @@ class NewsService {
   private newsletterArchiveService: NewsletterArchiveService;
   private rawArticleService: RawArticleService;
   private useMockData: boolean = false;
-  private readonly rss2JsonApiKey: string = "4aslwlcwucxcdgqjglhcv7jgpwoxq4yso";
   
   constructor() {
     console.log("=== NEWS SERVICE CONSTRUCTOR ===");
     console.log("Using Supabase Edge Functions for AI (Gemini & Mistral)");
     
     this.rssSourceService = new RssSourceService();
+    
     this.rssFeedService = new RssFeedService();
     this.digestService = new DigestService();
     this.localNewsletterService = new LocalNewsletterService();
     this.newsletterArchiveService = new NewsletterArchiveService();
     this.rawArticleService = new RawArticleService();
     
-    // Create DecoderService with auto provider selection (uses Supabase)
-    this.decoderService = new DecoderService('auto');
+    // Create DecoderService without API key (uses Supabase)
+    this.decoderService = new DecoderService();
     
-    console.log("DecoderService created using Supabase Edge Functions with auto provider selection");
+    console.log("DecoderService created using Supabase Edge Function");
   }
   
   // Set the API key (now ignored, kept for compatibility)
@@ -53,7 +53,7 @@ class NewsService {
   
   // Get the default API key (returns RSS2JSON key for RSS feeds)
   public getDefaultApiKey(): string {
-    return this.rss2JsonApiKey;
+    return this.decoderService.getRss2JsonApiKey();
   }
   
   // Get the Gemini API key (now returns info message)
@@ -91,7 +91,8 @@ class NewsService {
   public async fetchNews(): Promise<RssItem[]> {
     if (this.useMockData) {
       console.log("Using mock data instead of fetching from API");
-      return Promise.resolve(MOCK_NEWS_ITEMS);
+      const mockData = MOCK_NEWS_ITEMS;
+      return Promise.resolve(this.filterArticlesByEnabledSources(mockData));
     }
     
     const enabledSources = this.getEnabledRssSources();
@@ -99,7 +100,8 @@ class NewsService {
     if (enabledSources.length === 0) {
       console.log("No enabled RSS sources found, using mock data");
       toast.warning("Keine RSS-Quellen aktiviert");
-      return Promise.resolve(MOCK_NEWS_ITEMS);
+      const mockData = MOCK_NEWS_ITEMS;
+      return Promise.resolve(this.filterArticlesByEnabledSources(mockData));
     }
     
     try {
@@ -112,33 +114,39 @@ class NewsService {
       if (allItems.length === 0) {
         console.warn("No items found in any RSS feed, using fallback data");
         toast.warning("Keine Artikel in den RSS-Feeds gefunden - verwende Beispieldaten");
-        return MOCK_NEWS_ITEMS;
+        const mockData = MOCK_NEWS_ITEMS;
+        return this.filterArticlesByEnabledSources(mockData);
       }
+      
+      // Filter articles by enabled sources
+      const filteredItems = this.filterArticlesByEnabledSources(allItems);
       
       // Save articles to database
       try {
-        await this.rawArticleService.saveArticles(allItems);
-        console.log(`✅ ${allItems.length} articles saved to database`);
+        await this.rawArticleService.saveArticles(filteredItems);
+        console.log(`✅ ${filteredItems.length} filtered articles saved to database`);
       } catch (saveError) {
         console.error("Error saving articles to database:", saveError);
         toast.warning("Artikel geladen, aber nicht in Datenbank gespeichert");
       }
       
       console.log(`=== FETCH RESULTS ===`);
-      console.log(`Total articles: ${allItems.length}`);
+      console.log(`Total articles fetched: ${allItems.length}`);
+      console.log(`Filtered articles: ${filteredItems.length}`);
       
       // Sort by date (newest first)
-      allItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+      filteredItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
       
-      console.log(`=== RETURNING ${allItems.length} ARTICLES ===`);
-      return allItems;
+      console.log(`=== RETURNING ${filteredItems.length} PERSONALIZED ARTICLES ===`);
+      return filteredItems;
       
     } catch (error) {
       console.error('Critical error fetching news:', error);
       toast.error(`Fehler beim Laden der Nachrichten: ${(error as Error).message}`);
       
       console.log("Using fallback mock data due to error");
-      return MOCK_NEWS_ITEMS;
+      const mockData = MOCK_NEWS_ITEMS;
+      return this.filterArticlesByEnabledSources(mockData);
     }
   }
 
@@ -149,8 +157,11 @@ class NewsService {
       const rawArticles = await this.rawArticleService.getCurrentWeekArticles();
       const rssItems = rawArticles.map(article => this.rawArticleService.convertToRssItem(article));
       
-      console.log(`✅ Found ${rssItems.length} stored articles for current week`);
-      return rssItems;
+      // Filter by enabled sources
+      const filteredItems = this.filterArticlesByEnabledSources(rssItems);
+      
+      console.log(`✅ Found ${rssItems.length} stored articles, ${filteredItems.length} from enabled sources`);
+      return filteredItems;
     } catch (error) {
       console.error("Error fetching stored articles:", error);
       toast.error("Fehler beim Laden der gespeicherten Artikel");
@@ -165,8 +176,11 @@ class NewsService {
       const rawArticles = await this.rawArticleService.getAllArticles(limit);
       const rssItems = rawArticles.map(article => this.rawArticleService.convertToRssItem(article));
       
-      console.log(`✅ Found ${rssItems.length} stored articles in database`);
-      return rssItems;
+      // Filter by enabled sources
+      const filteredItems = this.filterArticlesByEnabledSources(rssItems);
+      
+      console.log(`✅ Found ${rssItems.length} stored articles, ${filteredItems.length} from enabled sources`);
+      return filteredItems;
     } catch (error) {
       console.error("Error fetching all stored articles:", error);
       toast.error("Fehler beim Laden aller gespeicherten Artikel");
@@ -209,7 +223,7 @@ class NewsService {
   // Generate AI summary for a specific article
   public async generateArticleSummary(article: RssItem): Promise<string | null> {
     try {
-      return await this.decoderService.generateArticleSummary(article.title, article.description || article.content || "");
+      return await this.decoderService.generateArticleSummary(article);
     } catch (error) {
       console.error('Error generating article summary:', error);
       toast.error(`Fehler bei der Zusammenfassung des Artikels: ${(error as Error).message}`);
@@ -311,7 +325,7 @@ class NewsService {
       const articlesToUse = selectedArticles || digest.items;
       
       console.log("Generating enhanced newsletter summary via Supabase...");
-      const summary = await this.decoderService.generateDetailedSummary(digest, articlesToUse, linkedInPage);
+      const summary = await this.decoderService.generateSummary(digest, articlesToUse, linkedInPage);
       
       // Mark articles as processed if they were successfully used for newsletter generation
       if (summary && articlesToUse.length > 0) {
@@ -395,19 +409,178 @@ class NewsService {
     return this.rawArticleService;
   }
 
-  public getDecoderService(): DecoderService {
-    return this.decoderService;
+  // ENHANCED: Filter articles by enabled RSS sources AND AI/Data Science relevance
+  public filterArticlesByEnabledSources(articles: RssItem[]): RssItem[] {
+    console.log("🔍 STARTING INTELLIGENT AI FILTERING");
+    console.log(`Input: ${articles.length} articles`);
+    
+    const enabledSources = this.getEnabledRssSources();
+    const enabledSourceNames = enabledSources.map(source => source.name.toLowerCase());
+    const enabledSourceUrls = enabledSources.map(source => {
+      try {
+        return new URL(source.url).hostname.toLowerCase();
+      } catch {
+        return source.url.toLowerCase();
+      }
+    });
+    
+    // Step 1: Filter by enabled sources
+    const sourceFilteredArticles = articles.filter(article => {
+      // Check by source name (exact match)
+      if (article.sourceName && enabledSourceNames.includes(article.sourceName.toLowerCase())) {
+        return true;
+      }
+      
+      // Check by URL hostname
+      if (article.link) {
+        try {
+          const articleHostname = new URL(article.link).hostname.toLowerCase();
+          if (enabledSourceUrls.some(sourceUrl => 
+            articleHostname.includes(sourceUrl) || sourceUrl.includes(articleHostname)
+          )) {
+            return true;
+          }
+        } catch {
+          // If URL parsing fails, continue with other checks
+        }
+      }
+      
+      // Check by partial source name matching
+      if (article.sourceName) {
+        const articleSourceLower = article.sourceName.toLowerCase();
+        return enabledSourceNames.some(enabledName => 
+          articleSourceLower.includes(enabledName) || 
+          enabledName.includes(articleSourceLower) ||
+          this.isSourceNameMatch(articleSourceLower, enabledName)
+        );
+      }
+      
+      return false;
+    });
+    
+    console.log(`After source filtering: ${sourceFilteredArticles.length} articles`);
+    
+    // Step 2: Apply STRICT AI/Data Science content filtering
+    const aiRelevantArticles = sourceFilteredArticles.filter(article => {
+      const title = (article.title || '').toLowerCase();
+      const description = (article.description || '').toLowerCase();
+      const content = `${title} ${description}`;
+      
+      console.log(`🔍 Checking: "${article.title}"`);
+      
+      // STRICT AI Keywords - must have at least one
+      const aiKeywords = [
+        'ki ', ' ai ', 'artificial intelligence', 'künstliche intelligenz',
+        'machine learning', 'deep learning', 'neural network',
+        'chatgpt', 'openai', 'claude', 'gemini', 'bard',
+        'llm', 'large language model', 'transformer',
+        'data science', 'datenwissenschaft', 'algorithmus', 'algorithm',
+        'computer vision', 'nlp', 'natural language processing',
+        'robotik', 'robotics', 'automation', 'autonom',
+        'tensorflow', 'pytorch', 'hugging face'
+      ];
+      
+      // Check for AI keywords
+      const hasAiKeyword = aiKeywords.some(keyword => content.includes(keyword));
+      
+      if (hasAiKeyword) {
+        console.log(`✅ ACCEPTED: Found AI keyword in "${article.title}"`);
+        return true;
+      }
+      
+      // EXCLUDE non-AI topics
+      const excludeKeywords = [
+        'audio overviews', 'search queries', 'founder experience',
+        'startup funding', 'business strategy', 'venture capital',
+        'sport', 'entertainment', 'musik', 'film', 'celebrity',
+        'mode', 'fashion', 'lifestyle', 'kochen', 'travel',
+        'politik', 'politics', 'wetter', 'weather'
+      ];
+      
+      const hasExcludeKeyword = excludeKeywords.some(keyword => content.includes(keyword));
+      
+      if (hasExcludeKeyword) {
+        console.log(`❌ REJECTED: Contains exclude keyword in "${article.title}"`);
+        return false;
+      }
+      
+      console.log(`❌ REJECTED: No AI relevance in "${article.title}"`);
+      return false;
+    });
+    
+    console.log(`🎯 FINAL RESULT: ${aiRelevantArticles.length} AI-relevant articles`);
+    console.log(`Filtered out: ${sourceFilteredArticles.length - aiRelevantArticles.length} non-AI articles`);
+    
+    return aiRelevantArticles;
   }
 
-  // Set the preferred AI model for all AI operations
-  public setPreferredAIModel(model: 'gemini' | 'mistral' | 'auto'): void {
-    console.log(`=== UPDATING AI MODEL PREFERENCE TO: ${model.toUpperCase()} ===`);
-    this.decoderService.setPreferredProvider(model);
+  // Basic source filtering without AI content filtering
+  public filterArticlesByEnabledSourcesOnly(articles: RssItem[]): RssItem[] {
+    console.log("🔍 BASIC SOURCE FILTERING (NO AI FILTER)");
+    
+    const enabledSources = this.getEnabledRssSources();
+    const enabledSourceNames = enabledSources.map(source => source.name.toLowerCase());
+    const enabledSourceUrls = enabledSources.map(source => {
+      try {
+        return new URL(source.url).hostname.toLowerCase();
+      } catch {
+        return source.url.toLowerCase();
+      }
+    });
+    
+    const filteredArticles = articles.filter(article => {
+      // Check by source name (exact match)
+      if (article.sourceName && enabledSourceNames.includes(article.sourceName.toLowerCase())) {
+        return true;
+      }
+      
+      // Check by URL hostname
+      if (article.link) {
+        try {
+          const articleHostname = new URL(article.link).hostname.toLowerCase();
+          if (enabledSourceUrls.some(sourceUrl => 
+            articleHostname.includes(sourceUrl) || sourceUrl.includes(articleHostname)
+          )) {
+            return true;
+          }
+        } catch {
+          // If URL parsing fails, continue with other checks
+        }
+      }
+      
+      // Check by partial source name matching
+      if (article.sourceName) {
+        const articleSourceLower = article.sourceName.toLowerCase();
+        return enabledSourceNames.some(enabledName => 
+          articleSourceLower.includes(enabledName) || 
+          enabledName.includes(articleSourceLower) ||
+          this.isSourceNameMatch(articleSourceLower, enabledName)
+        );
+      }
+      
+      return false;
+    });
+    
+    console.log(`Basic filtering result: ${filteredArticles.length} articles`);
+    return filteredArticles;
   }
 
-  // Get the current AI model preference  
-  public getPreferredAIModel(): string {
-    return this.decoderService.getPreferredProvider();
+  // Helper method for flexible source name matching
+  private isSourceNameMatch(articleSource: string, enabledSource: string): boolean {
+    // Remove common words and check for core matches
+    const cleanArticleSource = articleSource.replace(/\b(news|magazine|online|de|com|tech|technology)\b/g, '').trim();
+    const cleanEnabledSource = enabledSource.replace(/\b(news|magazine|online|de|com|tech|technology)\b/g, '').trim();
+    
+    // Check for core name matches
+    if (cleanArticleSource.includes('decoder') && cleanEnabledSource.includes('decoder')) return true;
+    if (cleanArticleSource.includes('golem') && cleanEnabledSource.includes('golem')) return true;
+    if (cleanArticleSource.includes('heise') && cleanEnabledSource.includes('heise')) return true;
+    if (cleanArticleSource.includes('techcrunch') && cleanEnabledSource.includes('techcrunch')) return true;
+    if (cleanArticleSource.includes('t3n') && cleanEnabledSource.includes('t3n')) return true;
+    if (cleanArticleSource.includes('mit') && cleanEnabledSource.includes('mit')) return true;
+    if (cleanArticleSource.includes('wired') && cleanEnabledSource.includes('wired')) return true;
+    
+    return false;
   }
 }
 

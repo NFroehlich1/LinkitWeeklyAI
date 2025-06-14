@@ -33,8 +33,24 @@ const Index = () => {
   const [selectedModel, setSelectedModel] = useState<LLMModel>('gemini');
   const [modelTestLoading, setModelTestLoading] = useState(false);
   const [elevenLabsTestLoading, setElevenLabsTestLoading] = useState(false);
+  const [geminiTestLoading, setGeminiTestLoading] = useState(false);
+  const [newsItems, setNewsItems] = useState<RssItem[]>([]);
+  // AI Filter is permanently enabled - no UI toggle needed
 
   useEffect(() => {
+    console.log("=== INDEX PAGE LOADED ===");
+    console.log("Initializing NewsService...");
+    
+    // Debug: Show current RSS sources
+    const enabledSources = newsService.getEnabledRssSources();
+    const allSources = newsService.getRssSources();
+    console.log("=== RSS SOURCES DEBUG ===");
+    console.log("All sources:", allSources);
+    console.log("Enabled sources:", enabledSources);
+    console.log("Total sources:", allSources.length);
+    console.log("Enabled sources count:", enabledSources.length);
+    
+    // Initial load with fresh fetch
     fetchNews();
   }, []);
 
@@ -179,6 +195,9 @@ const Index = () => {
         allItems = await newsService.fetchNews();
       }
 
+      // Store all items for filtering
+      setNewsItems(allItems);
+
       // Mark custom articles as such and combine with regular articles
       const markedCustomArticles = customArticles.map(article => ({
         ...article,
@@ -292,6 +311,46 @@ const Index = () => {
     }
   };
 
+  // Enhanced filter current articles by enabled sources AND AI relevance (permanently enabled)
+  const filterCurrentArticles = () => {
+    if (newsItems.length > 0) {
+      console.log("🔄 Filtering current articles by enabled sources and AI relevance");
+      
+      // Always use the enhanced AI/Data Science filtering
+      const filteredItems = newsService.filterArticlesByEnabledSources(newsItems);
+      
+      // Update the digest with filtered items
+      if (digest) {
+        const updatedDigest = {
+          ...digest,
+          items: [...filteredItems, ...customArticles.map(article => ({
+            ...article,
+            sourceName: 'Eigener',
+            isCustom: true
+          }))]
+        };
+        setDigest(updatedDigest);
+      }
+      
+      if (filteredItems.length !== newsItems.length) {
+        toast.success(`🎯 KI/Data Science Filter: ${filteredItems.length} von ${newsItems.length} Artikeln angezeigt`);
+      }
+    }
+  };
+
+  // Listen for RSS source changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'rss_sources') {
+        console.log("📡 RSS sources changed, filtering articles");
+        filterCurrentArticles();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [newsItems]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Header />
@@ -302,7 +361,8 @@ const Index = () => {
             🤖 {t('index.title')}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-            {t('index.subtitle')}
+            Automatische KI- und Data Science News Aggregation mit intelligenter Filterung 
+            für relevante Newsletter-Inhalte
           </p>
           
           {/* Navigation Buttons */}
@@ -324,6 +384,29 @@ const Index = () => {
           
                     {/* Debug Buttons */}
           <div className="flex flex-wrap gap-3 justify-center">
+            <Button 
+              onClick={fetchNews}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isLoading ? "Lädt..." : "Load News"}
+            </Button>
+            
+            <Button 
+              onClick={filterCurrentArticles}
+              disabled={!digest || newsItems.length === 0}
+              variant="outline"
+              className="bg-green-50 border-green-200 hover:bg-green-100"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Artikel personalisieren
+            </Button>
+            
             <Button 
               onClick={testRssLoading}
               disabled={debugLoading}

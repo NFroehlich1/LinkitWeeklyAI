@@ -8,6 +8,7 @@ import Newsletter from "./pages/Newsletter";
 import StudentNews from "./pages/StudentNews";
 import ArchiveQA from "./pages/ArchiveQA";
 import InteractiveDatabase from "./pages/InteractiveDatabase";
+import RssFeedManager from "./pages/RssFeedManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

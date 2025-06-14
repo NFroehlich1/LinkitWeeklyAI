@@ -19,4 +19,9 @@ export const navItems = [
     to: "/interactive-database",
     icon: <Database className="h-4 w-4" />,
   },
+  {
+    title: "RSS Verwaltung",
+    to: "/rss-manager",
+    icon: <Settings className="h-4 w-4" />,
+  },
 ];
