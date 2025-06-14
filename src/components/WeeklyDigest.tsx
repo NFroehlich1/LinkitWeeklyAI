@@ -538,26 +538,31 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     <p className="text-gray-600">{t('status.articles_loading')}</p>
                   </div>
                 ) : displayArticles.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 pb-4 border-b">
-                      <Star className="h-4 w-4 text-blue-500" />
-                      <span className="hidden sm:inline">
-                        {selectedArticles 
-                          ? `${selectedArticles.length} ${t('digest.selected_articles')}` 
-                          : showAllArticles
-                            ? `${t('digest.all_articles')} ${displayArticles.length}`
-                            : `${t('digest.top_10')} ${displayArticles.length}`
-                        }
-                      </span>
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">{t('digest.news_tab')}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedArticles 
+                            ? `${selectedArticles.length} ${t('digest.selected_articles')}` 
+                            : showAllArticles
+                              ? `${t('digest.all_articles')} ${displayArticles.length}`
+                              : `${t('digest.top_10')} ${displayArticles.length}`
+                          }
+                        </p>
+                      </div>
                     </div>
-                    {displayArticles.map((article, index) => (
-                      <NewsCard
-                        key={getArticleId(article)}
-                        item={article}
-                        onDelete={handleDeleteArticle}
-                        onTitleImproved={handleTitleImproved}
-                      />
-                    ))}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {displayArticles.map((article, index) => (
+                        <NewsCard
+                          key={getArticleId(article)}
+                          item={article}
+                          onDelete={handleDeleteArticle}
+                          onTitleImproved={handleTitleImproved}
+                        />
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">

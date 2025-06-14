@@ -299,7 +299,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
         <div className="h-48 overflow-hidden relative">
           <img 
             src={imageUrl} 
-            alt={localTitle} 
+            alt={localTitle}
             className="w-full h-full object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
