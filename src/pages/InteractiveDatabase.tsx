@@ -12,7 +12,7 @@ import NewsService, { RssItem } from '@/services/NewsService';
 import NewsCard from '@/components/NewsCard';
 import Header from '@/components/Header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // Spezifische Cluster Definition für die interaktive Datenbank
 const AI_CLUSTERS = {
@@ -83,7 +83,33 @@ interface ClusterStats {
 }
 
 const InteractiveDatabase = () => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
+
+  // Helper function to get translated cluster name
+  const getClusterName = (clusterKey: string): string => {
+    const keyMap: { [key: string]: string } = {
+      "Modellentwicklung": "clusters.modellentwicklung",
+      "Governance & Ethik": "clusters.governanceEthik", 
+      "Education & Learning": "clusters.educationLearning",
+      "Use Cases": "clusters.useCases",
+      "Geopolitische Dynamiken": "clusters.geopolitischeDynamiken",
+      "Wirtschaft & Markt": "clusters.wirtschaftMarkt"
+    };
+    return t(keyMap[clusterKey] || clusterKey);
+  };
+
+  // Helper function to get translated cluster description
+  const getClusterDescription = (clusterKey: string): string => {
+    const keyMap: { [key: string]: string } = {
+      "Modellentwicklung": "clusters.modellentwicklungDesc",
+      "Governance & Ethik": "clusters.governanceEthikDesc",
+      "Education & Learning": "clusters.educationLearningDesc", 
+      "Use Cases": "clusters.useCasesDesc",
+      "Geopolitische Dynamiken": "clusters.geopolitischeDynamikenDesc",
+      "Wirtschaft & Markt": "clusters.wirtschaftMarktDesc"
+    };
+    return t(keyMap[clusterKey] || AI_CLUSTERS[clusterKey as keyof typeof AI_CLUSTERS]?.description || clusterKey);
+  };
   const [newsService] = useState(new NewsService());
   const [articles, setArticles] = useState<EnrichedArticle[]>([]);
   const [clusterStats, setClusterStats] = useState<ClusterStats[]>([]);
@@ -140,7 +166,7 @@ const InteractiveDatabase = () => {
 
       if (allItems.length === 0) {
         console.warn("⚠️ No articles found at all!");
-        setError(t('toast.no_articles_found_reload'));
+        setError(t('database.noArticlesFoundError'));
         return;
       }
 
@@ -157,13 +183,13 @@ const InteractiveDatabase = () => {
 
       setArticles(enrichedArticles);
       console.log("✅ Articles enriched and loaded for interactive database");
-      toast.success(`${enrichedArticles.length} ${t('toast.articles_loaded_classified')}`);
+      toast.success(`${enrichedArticles.length} ${t('database.articlesLoadedAndClassified')}`);
 
     } catch (error) {
       console.error('❌ Error loading articles:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      setError(`${t('toast.loading_error')} ${errorMessage}`);
-      toast.error(t('toast.error_loading_articles'));
+      setError(`${t('database.errorLoadingArticles')}: ${errorMessage}`);
+      toast.error(t('database.errorLoadingArticles'));
     } finally {
       setIsLoading(false);
       console.log("🏁 loadArticles finished");
@@ -394,11 +420,11 @@ const InteractiveDatabase = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <Database className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-red-600 mb-2">{t('database.error_loading')}</h3>
+            <h3 className="text-xl font-semibold text-red-600 mb-2">{t('database.errorLoading')}</h3>
             <p className="text-gray-500 mb-4">{error}</p>
             <Button onClick={loadArticles} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
-              {t('database.try_again')}
+              {t('database.tryAgain')}
             </Button>
           </div>
         </div>
@@ -435,18 +461,18 @@ const InteractiveDatabase = () => {
           
           <div className="text-center py-12">
             <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('database.no_articles')}</h3>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('database.noArticlesAvailable')}</h3>
             <p className="text-gray-500 mb-4">
-              {t('database.no_articles_desc')}
+              {t('database.loadArticlesFirst')}
             </p>
             <div className="flex gap-3 justify-center">
               <Button onClick={loadArticles} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {t('database.load_articles')}
+                {t('database.loadArticles')}
               </Button>
               <a href="/" className="inline-block">
                 <Button variant="default">
-                  {t('database.to_main_page')}
+                  {t('database.toMainPage')}
                 </Button>
               </a>
             </div>
@@ -478,7 +504,7 @@ const InteractiveDatabase = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder={t('database.search_placeholder')}
+                placeholder={t('database.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -487,13 +513,13 @@ const InteractiveDatabase = () => {
             
             <Select value={selectedCluster} onValueChange={setSelectedCluster}>
               <SelectTrigger>
-                <SelectValue placeholder={t('database.select_cluster')} />
+                <SelectValue placeholder={t('database.selectCluster')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('database.all_clusters')}</SelectItem>
+                <SelectItem value="all">{t('database.allClusters')}</SelectItem>
                 {Object.keys(AI_CLUSTERS).map(cluster => (
                   <SelectItem key={cluster} value={cluster}>
-                    {cluster}
+                    {getClusterName(cluster)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -504,9 +530,9 @@ const InteractiveDatabase = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="relevance">{t('database.relevance')}</SelectItem>
-                <SelectItem value="clusterRelevance">{t('database.cluster_relevance')}</SelectItem>
-                <SelectItem value="date">{t('database.by_date')}</SelectItem>
+                <SelectItem value="relevance">{t('database.sortByRelevance')}</SelectItem>
+                <SelectItem value="clusterRelevance">{t('database.sortByClusterRelevance')}</SelectItem>
+                <SelectItem value="date">{t('database.sortByDate')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -553,7 +579,7 @@ const InteractiveDatabase = () => {
             </div>
             
             <div className="text-sm text-gray-600">
-              {filteredArticles.length} von {articles.length} Artikeln
+              {filteredArticles.length} {t('database.articlesOf')} {articles.length} {t('database.articles')}
             </div>
           </div>
         </div>
@@ -561,10 +587,10 @@ const InteractiveDatabase = () => {
         {/* Cluster Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="grid grid-cols-7 w-full">
-            <TabsTrigger value="all">Alle</TabsTrigger>
+            <TabsTrigger value="all">{t('database.all')}</TabsTrigger>
             {Object.entries(AI_CLUSTERS).map(([cluster, config]) => (
               <TabsTrigger key={cluster} value={cluster} className={`text-xs ${config.textColor}`}>
-                {cluster.replace('&', '&')}
+                {getClusterName(cluster).replace('&', '&')}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -579,12 +605,12 @@ const InteractiveDatabase = () => {
                         onClick={() => setActiveTab(stat.cluster)}>
                     <CardHeader className="pb-2">
                       <CardTitle className={`text-lg ${config.textColor} flex items-center justify-between`}>
-                        <span>{stat.cluster}</span>
+                        <span>{getClusterName(stat.cluster)}</span>
                         <Badge variant="secondary" className={config.color}>
                           {stat.count}
                         </Badge>
                       </CardTitle>
-                      <p className="text-sm text-gray-600">{config.description}</p>
+                      <p className="text-sm text-gray-600">{getClusterDescription(stat.cluster)}</p>
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-1 mb-2">
@@ -608,8 +634,8 @@ const InteractiveDatabase = () => {
           {Object.keys(AI_CLUSTERS).map(cluster => (
             <TabsContent key={cluster} value={cluster}>
               <div className="mb-4">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{cluster}</h3>
-                <p className="text-gray-600">{AI_CLUSTERS[cluster as keyof typeof AI_CLUSTERS].description}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{getClusterName(cluster)}</h3>
+                <p className="text-gray-600">{getClusterDescription(cluster)}</p>
               </div>
             </TabsContent>
           ))}
@@ -633,7 +659,7 @@ const InteractiveDatabase = () => {
                     <Badge 
                       className={`${getClusterConfig(article.cluster).color} text-white text-xs shadow-sm`}
                     >
-                      {article.cluster}
+                      {getClusterName(article.cluster)}
                     </Badge>
                   </div>
                 )}
@@ -660,11 +686,11 @@ const InteractiveDatabase = () => {
         ) : (
           <div className="text-center py-12">
             <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('database.no_articles_found_filter')}</h3>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('database.noArticlesFoundInFilter')}</h3>
             <p className="text-gray-500">
               {searchTerm || (selectedCluster && selectedCluster !== 'all')
-                ? t('database.try_different_search')
-                : t('database.reload_page')
+                ? t('database.tryDifferentSearch')
+                : t('database.reloadToLoad')
               }
             </p>
           </div>
@@ -674,7 +700,7 @@ const InteractiveDatabase = () => {
         <div className="flex justify-center mt-8">
           <Button onClick={loadArticles} disabled={isLoading} variant="outline">
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {t('database.reload_articles')}
+            {t('database.reloadArticles')}
           </Button>
         </div>
       </div>

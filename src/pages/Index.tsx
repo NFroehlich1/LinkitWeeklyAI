@@ -12,11 +12,12 @@ import Header from "@/components/Header";
 import CustomArticleImporter from "@/components/CustomArticleImporter";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 import { Link } from "react-router-dom";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const Index = () => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [newsService] = useState(new NewsService());
   const [digest, setDigest] = useState<WeeklyDigest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,7 @@ const Index = () => {
   const [improvingTitles, setImprovingTitles] = useState<Set<string>>(new Set());
   const [debugLoading, setDebugLoading] = useState(false);
   const [geminiTestLoading, setGeminiTestLoading] = useState(false);
+  const [elevenLabsTestLoading, setElevenLabsTestLoading] = useState(false);
 
   useEffect(() => {
     fetchNews();
@@ -36,7 +38,7 @@ const Index = () => {
     setGeminiTestLoading(true);
     try {
       console.log("=== DEBUG: TESTING GEMINI API ===");
-      toast.info("Teste Gemini API...");
+      toast.info(t('toast.testingGemini'));
       
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
         body: { 
@@ -46,20 +48,76 @@ const Index = () => {
 
       if (error) {
         console.error("Supabase function error:", error);
-        toast.error(`Gemini API Fehler: ${error.message}`);
+        toast.error(`${t('toast.geminiTestError')} ${error.message}`);
         return;
       }
 
       if (data.isValid) {
-        toast.success(`✅ Gemini API funktioniert: ${data.message}`);
+        toast.success(`${t('toast.geminiSuccess')} ${data.message}`);
       } else {
-        toast.error(`❌ Gemini API Problem: ${data.message}`);
+        toast.error(`${t('toast.geminiError')} ${data.message}`);
       }
     } catch (error) {
       console.error("Gemini API test error:", error);
-      toast.error(`Gemini Test Fehler: ${(error as Error).message}`);
+      toast.error(`${t('toast.geminiTestError')} ${(error as Error).message}`);
     } finally {
       setGeminiTestLoading(false);
+    }
+  };
+
+  const testElevenLabsAPI = async () => {
+    setElevenLabsTestLoading(true);
+    try {
+      console.log("=== DEBUG: TESTING ELEVEN LABS API ===");
+      toast.info(t('toast.testingElevenLabs'));
+      
+      const { data, error } = await supabase.functions.invoke('rapid-processor', {
+        body: { 
+          action: 'verify-key'
+        }
+      });
+
+      if (error) {
+        console.error("Supabase function error:", error);
+        
+        // Enhanced error handling based on GitHub issue #45
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const errorMessage = await error.context.json();
+            console.error('Function returned an error:', errorMessage);
+            toast.error(`${t('toast.edgeFunctionError')} ${errorMessage.error || JSON.stringify(errorMessage)}`);
+          } catch (jsonError) {
+            try {
+              const errorText = await error.context.text();
+              console.error('Function returned text error:', errorText);
+              toast.error(`${t('toast.edgeFunctionError')} ${errorText}`);
+            } catch (textError) {
+              console.error('Could not parse error response:', textError);
+              toast.error(`${t('toast.edgeFunctionError')} ${t('error.httpError')} ${error.context.status || t('error.unknownStatus')}`);
+            }
+          }
+        } else if (error instanceof FunctionsRelayError) {
+          console.error('Relay error:', error.message);
+          toast.error(`${t('toast.relayError')} ${error.message}`);
+        } else if (error instanceof FunctionsFetchError) {
+          console.error('Fetch error:', error.message);
+          toast.error(`${t('toast.networkError')} ${error.message}`);
+        } else {
+          toast.error(`${t('toast.unknownError')} ${error.message}`);
+        }
+        return;
+      }
+
+      if (data.isValid) {
+        toast.success(`${t('toast.elevenLabsSuccess')} ${data.message}`);
+      } else {
+        toast.error(`${t('toast.elevenLabsError')} ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Eleven Labs API test error:", error);
+      toast.error(`${t('toast.elevenLabsTestError')} ${(error as Error).message}`);
+    } finally {
+      setElevenLabsTestLoading(false);
     }
   };
 
@@ -67,22 +125,22 @@ const Index = () => {
     setDebugLoading(true);
     try {
       console.log("=== DEBUG: TESTING RSS LOADING ===");
-      toast.info("Teste RSS-Loading...");
+      toast.info(t('toast.testingRss'));
       
       // Force fresh fetch from RSS feeds
       const freshItems = await newsService.fetchNews();
       console.log("Fresh items fetched:", freshItems.length);
       
       if (freshItems.length > 0) {
-        toast.success(`✅ ${freshItems.length} ${t('toast.new_articles_found')}`);
+        toast.success(`${freshItems.length} ${t('toast.rssSuccess')}`);
         // Refresh the display
         fetchNews();
       } else {
-        toast.warning(t('toast.no_new_articles'));
+        toast.warning(t('toast.rssNoArticles'));
       }
     } catch (error) {
       console.error("Debug RSS loading error:", error);
-      toast.error(`RSS-Test Fehler: ${(error as Error).message}`);
+      toast.error(`${t('toast.rssError')} ${(error as Error).message}`);
     } finally {
       setDebugLoading(false);
     }
@@ -145,7 +203,7 @@ const Index = () => {
       
     } catch (error) {
       console.error('Error fetching news:', error);
-      toast.error(`${t('toast.loading_error')} ${(error as Error).message}`);
+      toast.error(`${t('general.error')}: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +217,7 @@ const Index = () => {
     );
 
     if (isDuplicate) {
-      toast.warning(`⚠️ ${t('toast.article_already_exists')}`);
+      toast.warning(t('index.duplicateArticle'));
       return;
     }
 
@@ -171,7 +229,7 @@ const Index = () => {
       setCustomArticles(prev => [...prev, article]);
       setShowImporter(false);
       
-      toast.success(`✅ ${t('toast.article_added_successfully')}`);
+      toast.success(t('index.articleAdded'));
       
       // Refresh the digest with the new article
       setTimeout(() => {
@@ -179,7 +237,7 @@ const Index = () => {
       }, 100);
     } catch (error) {
       console.error("Error saving custom article:", error);
-      toast.error(`❌ ${t('toast.article_save_error')}`);
+      toast.error(t('index.errorSavingArticle'));
     }
   };
 
@@ -201,13 +259,13 @@ const Index = () => {
 
       if (error) {
         console.error("Supabase function error:", error);
-        toast.error("Fehler bei der Titel-Verbesserung");
+        toast.error(t('index.errorImprovingTitle'));
         return;
       }
 
       if (data.error) {
         console.error("Gemini API Error:", data.error);
-        toast.error("Fehler bei der Titel-Verbesserung");
+        toast.error(t('index.errorImprovingTitle'));
         return;
       }
 
@@ -218,14 +276,14 @@ const Index = () => {
             ? { ...a, title: data.improvedTitle }
             : a
         ));
-        toast.success("Titel erfolgreich verbessert");
+        toast.success(t('toast.titleImproved'));
         console.log("Article title improved successfully");
       } else {
-        toast.error("Kein verbesserter Titel erhalten");
+        toast.error(t('index.noImprovedTitle'));
       }
     } catch (error) {
       console.error("Error improving article title:", error);
-      toast.error("Fehler bei der Titel-Verbesserung");
+      toast.error(t('index.errorImprovingTitle'));
     } finally {
       setImprovingTitles(prev => {
         const newSet = new Set(prev);
@@ -242,10 +300,10 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {t('main.title')}
+            🤖 {t('index.title')}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-            {t('main.subtitle')}
+            {t('index.subtitle')}
           </p>
           
           {/* Navigation Buttons */}
@@ -253,14 +311,14 @@ const Index = () => {
             <Link to="/student-news">
               <Button variant="outline" className="bg-blue-50 border-blue-200 hover:bg-blue-100">
                 <GraduationCap className="h-4 w-4 mr-2" />
-                {t('main.student_news')}
+                {t('index.top10Students')}
               </Button>
             </Link>
             
             <Link to="/interactive-database">
               <Button variant="outline" className="bg-purple-50 border-purple-200 hover:bg-purple-100">
                 <Database className="h-4 w-4 mr-2" />
-                {t('main.database')}
+                {t('index.searchDatabase')}
               </Button>
             </Link>
           </div>
@@ -278,7 +336,7 @@ const Index = () => {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              {debugLoading ? t('main.testing') : t('main.rss_debug_test')}
+              {debugLoading ? t('index.testing') : t('index.rssDebugTest')}
             </Button>
             
             <Button 
@@ -292,7 +350,21 @@ const Index = () => {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              {geminiTestLoading ? t('main.testing') : t('main.gemini_api_test')}
+              {geminiTestLoading ? t('index.testing') : t('index.geminiApiTest')}
+            </Button>
+            
+            <Button 
+              onClick={testElevenLabsAPI}
+              disabled={elevenLabsTestLoading}
+              variant="outline" 
+              className="bg-green-50 border-green-200 hover:bg-green-100"
+            >
+              {elevenLabsTestLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {elevenLabsTestLoading ? t('index.testing') : t('index.elevenLabsTest')}
             </Button>
           </div>
         </div>
@@ -328,14 +400,14 @@ const Index = () => {
               <Card>
                 <CardContent className="py-8 text-center">
                   <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">{t('main.no_news_found')}</p>
+                  <p className="text-gray-600">{t('index.noNewsFound')}</p>
                   <Button 
                     onClick={fetchNews} 
                     variant="outline" 
                     className="mt-4"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    {t('main.try_again')}
+                    {t('index.tryAgain')}
                   </Button>
                 </CardContent>
               </Card>
@@ -346,7 +418,7 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>{t('main.add_article')}</span>
+                  <span>{t('index.addArticle')}</span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -356,7 +428,7 @@ const Index = () => {
                   </Button>
                 </CardTitle>
                 <CardDescription>
-                  {customArticles.length} {t('main.custom_articles')}
+                  {customArticles.length} {t('index.customArticlesCount')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -372,20 +444,20 @@ const Index = () => {
                 {customArticles.length === 0 ? (
                   <div className="text-center py-4">
                     <TrendingUp className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600 text-sm">{t('main.no_custom_articles')}</p>
+                    <p className="text-gray-600 text-sm">{t('index.noCustomArticles')}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {t('main.click_plus_add')}
+                      {t('index.clickPlusToAdd')}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      Ihre eigenen Artikel werden direkt in der Hauptübersicht mit einem 
-                      <Badge variant="custom" className="mx-1 text-xs">{t('main.custom_article_label')}</Badge>
-                      Label angezeigt.
+                      {t('index.customArticleDescription')} 
+                      <Badge variant="custom" className="mx-1 text-xs">{t('index.customArticleLabel')}</Badge>
+                      {t('index.customArticleDescription2')}
                     </p>
                     <div className="text-xs text-gray-500">
-                      {customArticles.length} {t('main.articles_added')}
+                      {customArticles.length} {t('index.articlesAdded')}
                     </div>
                   </div>
                 )}

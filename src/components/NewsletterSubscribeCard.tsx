@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 import AdminLoginForm from "@/components/AdminLoginForm";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface NewsletterSubscribeCardProps {
   onAdminLogin: () => void;
 }
 
 const NewsletterSubscribeCard = ({ onAdminLogin }: NewsletterSubscribeCardProps) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   
   return (
@@ -21,9 +21,9 @@ const NewsletterSubscribeCard = ({ onAdminLogin }: NewsletterSubscribeCardProps)
         <div className="mx-auto mb-4 rounded-full bg-primary/10 p-3 w-fit">
           <Mail className="h-6 w-6 text-primary" />
         </div>
-        <CardTitle className="text-2xl">{t('newsletter.subscribe_title')}</CardTitle>
+        <CardTitle className="text-2xl">{t('newsletter.subscribeTitle')}</CardTitle>
         <CardDescription>
-          {t('newsletter.subscribe_description')}
+          {t('newsletter.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -38,10 +38,10 @@ const NewsletterSubscribeCard = ({ onAdminLogin }: NewsletterSubscribeCardProps)
       </CardContent>
       <CardFooter className="flex flex-col text-sm text-muted-foreground">
         <p className="text-center mb-2">
-          {t('newsletter.weekly_delivery')}
+          {t('newsletter.weeklyFrequency')}
         </p>
         <p className="text-center">
-          {t('newsletter.unsubscribe_info')}
+          {t('newsletter.unsubscribeAnytime')}
         </p>
         {!showAdminLogin && (
           <Button
@@ -50,7 +50,7 @@ const NewsletterSubscribeCard = ({ onAdminLogin }: NewsletterSubscribeCardProps)
             className="mt-4 text-xs text-muted-foreground"
             onClick={() => setShowAdminLogin(true)}
           >
-            {t('newsletter.admin_access')}
+            {t('newsletter.adminAccess')}
           </Button>
         )}
       </CardFooter>
