@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Square } from 'lucide-react';
 import { toast } from 'sonner';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 // TypeScript declarations for Web Speech API
 declare global {
@@ -59,7 +58,7 @@ declare var SpeechRecognition: {
 };
 
 interface VoiceInputProps {
-  onTranscript: (transcript: string) => void;
+  onTranscript: (text: string) => void;
   isDisabled?: boolean;
   className?: string;
   language?: string;
@@ -71,12 +70,10 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
   className = "",
   language = "de-DE"
 }) => {
-  const { t } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const [transcript, setTranscript] = useState("");
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if Speech Recognition is supported
@@ -120,16 +117,27 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         }
       };
 
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        
-        if (event.error === 'not-allowed') {
-          toast.error(t('voice.microphone_access_browser'));
-        } else {
-          toast.error(t('voice.microphone_access_denied'));
-        }
-        
+      recognition.onerror = (event) => {
+        console.error("🚫 Speech recognition error:", event.error);
         setIsListening(false);
+        setTranscript("");
+        
+        switch (event.error) {
+          case 'no-speech':
+            toast.error("Keine Sprache erkannt. Versuchen Sie es erneut.");
+            break;
+          case 'audio-capture':
+            toast.error("Mikrofonzugriff verweigert oder nicht verfügbar.");
+            break;
+          case 'not-allowed':
+            toast.error("Mikrofonberechtigung verweigert. Bitte erlauben Sie den Mikrofonzugriff.");
+            break;
+          case 'network':
+            toast.error("Netzwerkfehler bei der Spracherkennung.");
+            break;
+          default:
+            toast.error(`Spracherkennungsfehler: ${event.error}`);
+        }
       };
 
       recognition.onend = () => {
@@ -149,7 +157,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         recognitionRef.current.stop();
       }
     };
-  }, [language, onTranscript, t]);
+  }, [language, onTranscript]);
 
   const startListening = async () => {
     if (!recognitionRef.current || isDisabled) return;

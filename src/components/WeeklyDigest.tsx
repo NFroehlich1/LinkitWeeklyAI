@@ -131,7 +131,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
       return updated;
     });
     
-    toast.success(t('news.removed_from_overview'));
+    toast.success("Artikel aus der Übersicht entfernt");
   };
 
   const handlePermanentDeleteArticle = (articleToDelete: RssItem) => {
@@ -168,7 +168,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
     try {
       console.log("Validating content and digest...");
       if (!content || content.trim().length === 0) {
-        const error = t('toast.no_newsletter_content');
+        const error = "Newsletter-Inhalt ist leer";
         console.error(error);
         setArchiveSaveError(error);
         toast.error(error);
@@ -195,7 +195,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
         toast.success(`Newsletter erfolgreich im Archiv gespeichert! (ID: ${result.id})`);
         return true;
       } else {
-        const error = t('toast.save_failed');
+        const error = "Speichern fehlgeschlagen - kein Ergebnis erhalten";
         console.error(error);
         setArchiveSaveError(error);
         toast.error(error);
@@ -234,19 +234,14 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
       const summary = await serviceToUse.generateNewsletterSummary(
         currentDigest, 
         articlesToUse,
-        linkedInPage,
-        language
+        linkedInPage
       );
       
       if (summary && summary.trim().length > 0) {
         console.log("✅ Newsletter generated successfully");
         setGeneratedContent(summary);
         setActiveTab("summary");
-        
-        const successMessage = language === 'de' 
-          ? "Newsletter erfolgreich generiert!" 
-          : "Newsletter generated successfully!";
-        toast.success(successMessage);
+        toast.success("Newsletter erfolgreich generiert!");
         
         console.log("🔄 Automatically saving to archive...");
         const saveSuccess = await saveToArchive(summary);
@@ -254,18 +249,12 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
           console.log("✅ Newsletter automatically saved to archive");
         }
       } else {
-        const errorMessage = language === 'de'
-          ? "Newsletter-Generierung hat leeren Inhalt zurückgegeben"
-          : "Newsletter generation returned empty content";
-        throw new Error(errorMessage);
+        throw new Error("Newsletter-Generierung hat leeren Inhalt zurückgegeben");
       }
     } catch (error) {
       console.error("❌ Error generating newsletter:", error);
-      const errorMessage = error instanceof Error ? error.message : (language === 'de' ? "Unbekannter Fehler" : "Unknown error");
-      const toastMessage = language === 'de' 
-        ? `Generierungs-Fehler: ${errorMessage}`
-        : `Generation error: ${errorMessage}`;
-      toast.error(toastMessage);
+      const errorMessage = error instanceof Error ? error.message : "Unbekannter Fehler";
+      toast.error(`Generierungs-Fehler: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
     }
@@ -287,7 +276,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
 
   const handleAutomaticGeneration = async () => {
     if (!newsService) {
-      toast.error(t('toast.newsservice_unavailable'));
+      toast.error("NewsService nicht verfügbar");
       return;
     }
 
@@ -325,7 +314,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
     setIsSelecting(false);
     
     if (uniqueSelectedArticles.length > 0) {
-      toast.success(`${uniqueSelectedArticles.length} ${t('toast.articles_for_summary')}`);
+      toast.success(`${uniqueSelectedArticles.length} Artikel für die Zusammenfassung ausgewählt`);
     }
   };
   
@@ -370,7 +359,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     <span className="font-medium">{currentDigest.dateRange}</span>
                     {selectedArticles && (
                       <span className="inline-flex px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                        {selectedArticles.length} {t('digest.selected_articles')}
+                        {selectedArticles.length} ausgewählte Artikel
                       </span>
                     )}
                     {isSaving && (
@@ -407,7 +396,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     className="gap-2 bg-white hover:bg-green-50 border-green-200 text-green-700"
                   >
                     <Star className="h-4 w-4" />
-                    <span className="hidden sm:inline"
+                    <span className="hidden sm:inline">
                       {selectedArticles ? t('weeklyDigest.editArticles') : t('weeklyDigest.editTop10')}
                     </span>
                     <span className="sm:hidden">{t('general.edit')}</span>
@@ -583,14 +572,6 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                         />
                       ))}
                     </div>
-                    {displayArticles.map((article, index) => (
-                      <NewsCard
-                        key={getArticleId(article)}
-                        item={article}
-                        onDelete={handleDeleteArticle}
-                        onTitleImproved={handleTitleImproved}
-                      />
-                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -600,28 +581,74 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                   </div>
                 )}
               </TabsContent>
-
+              
               <TabsContent value="summary" className="mt-0">
                 {generatedContent ? (
-                  <div className="space-y-6">
-                    <div className="prose prose-sm max-w-none">
-                      <div 
-                        className="whitespace-pre-wrap text-gray-700 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: generatedContent.replace(/\n/g, '<br />') }}
-                      />
+                  <div className="newsletter-content bg-white rounded-lg border shadow-sm">
+                    <div className="p-6 sm:p-8">
+                      <div className="prose prose-sm sm:prose-lg max-w-none prose-headings:text-primary prose-a:text-blue-600 prose-p:leading-relaxed prose-li:leading-relaxed">
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ children }) => <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-6 border-b border-gray-200 pb-3">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mt-8 mb-4">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mt-6 mb-3">{children}</h3>,
+                            p: ({ children }) => <p className="text-gray-700 mb-4 leading-relaxed">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc list-inside space-y-2 mb-4 text-gray-700">{children}</ul>,
+                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                            a: ({ href, children }) => (
+                              <a 
+                                href={href} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-blue-600 hover:text-blue-800 underline decoration-2 underline-offset-2 font-medium break-words"
+                              >
+                                {children}
+                              </a>
+                            ),
+                            strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-gray-800">{children}</em>
+                          }}
+                        >
+                          {generatedContent}
+                        </ReactMarkdown>
+                      </div>
                     </div>
+                    
+                    {!generatedContent.includes("linkedin.com/company/linkit-karlsruhe") && (
+                      <div className="px-6 sm:px-8 pb-6 border-t border-gray-200 bg-gray-50">
+                        <div className="pt-6">
+                          <p className="font-semibold text-gray-900 mb-2">Weitere Informationen und Updates:</p>
+                          <p className="text-gray-700 leading-relaxed">
+                            Besuchen Sie unsere{" "}
+                            <a 
+                              href="https://www.linkedin.com/company/linkit-karlsruhe/posts/?feedView=all" 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-primary hover:text-primary/80 font-medium underline decoration-2 underline-offset-2 break-all"
+                            >
+                              LinkedIn-Seite
+                            </a>{" "}
+                            für aktuelle Beiträge und Neuigkeiten.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">{t('status.no_newsletter')}</p>
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-2/3" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-32 w-full" />
                   </div>
                 )}
               </TabsContent>
-
+              
               <TabsContent value="ask" className="mt-0">
                 <NewsletterAskAbout 
-                  articles={currentDigest.items}
-                  newsletterContent={generatedContent}
+                  articles={displayArticles} 
+                  newsletterContent={generatedContent || undefined}
                 />
               </TabsContent>
             </Tabs>

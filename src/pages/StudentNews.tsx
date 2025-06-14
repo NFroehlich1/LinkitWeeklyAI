@@ -10,10 +10,8 @@ import { getCurrentWeek, getCurrentYear } from "@/utils/dateUtils";
 import Header from "@/components/Header";
 import NewsCard from "@/components/NewsCard";
 import { Link } from "react-router-dom";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 const StudentNews = () => {
-  const { t } = useLanguage();
   const [newsService] = useState(new NewsService());
   const [relevantArticles, setRelevantArticles] = useState<RssItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +63,7 @@ const StudentNews = () => {
       
     } catch (error) {
       console.error('Error fetching student relevant news:', error);
-      toast.error(`${t('toast.student_news_error')} ${(error as Error).message}`);
+      toast.error(`Fehler beim Laden der Studenten-relevanten Nachrichten: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);
     }
@@ -157,23 +155,24 @@ const StudentNews = () => {
         <div className="mb-8">
           <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('student.back')}
+            Zurück zur Hauptseite
           </Link>
           
           <div className="text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
               <GraduationCap className="h-8 w-8 text-blue-600" />
               <h1 className="text-4xl font-bold text-gray-900">
-                {t('student.title')}
+                Top 10 für Studenten
               </h1>
             </div>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              {t('student.subtitle')}
+              Die relevantesten Tech- und KI-Nachrichten für Studierende - 
+              kuratiert und nach Wichtigkeit sortiert
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <BookOpen className="h-5 w-5 text-blue-500" />
               <span className="text-sm text-gray-500">
-                {t('main.week')} {getCurrentWeek()}/{getCurrentYear()} • {t('main.automatically_updated')}
+                KW {getCurrentWeek()}/{getCurrentYear()} • Automatisch aktualisiert
               </span>
             </div>
           </div>
@@ -182,8 +181,8 @@ const StudentNews = () => {
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-600" />
-            <h2 className="text-xl font-semibold">{t('student.most_relevant')}</h2>
-            <Badge variant="custom">{relevantArticles.length} {t('student.articles')}</Badge>
+            <h2 className="text-xl font-semibold">Relevanteste Artikel</h2>
+            <Badge variant="custom">{relevantArticles.length} Artikel</Badge>
           </div>
           
           <Button 
@@ -194,12 +193,12 @@ const StudentNews = () => {
             {isLoading ? (
               <>
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                {t('student.updating')}
+                Aktualisiere...
               </>
             ) : (
               <>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {t('student.update')}
+                Aktualisieren
               </>
             )}
           </Button>
@@ -246,27 +245,27 @@ const StudentNews = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <GraduationCap className="h-5 w-5 text-blue-600" />
-                  {t('student.selection_criteria')}
+                  Auswahlkriterien
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <h4 className="font-medium mb-2">{t('student.relevance_filter')}</h4>
+                    <h4 className="font-medium mb-2">Relevanz-Filter:</h4>
                     <ul className="space-y-1 text-gray-600">
-                      <li>{t('student.ai_tech_topics')}</li>
-                      <li>{t('student.programming_software')}</li>
-                      <li>{t('student.career_education')}</li>
-                      <li>{t('student.startup_innovation')}</li>
+                      <li>• KI & Technologie-Themen</li>
+                      <li>• Programmierung & Software</li>
+                      <li>• Karriere & Bildung</li>
+                      <li>• Startup & Innovation</li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-medium mb-2">{t('student.evaluation_criteria')}</h4>
+                    <h4 className="font-medium mb-2">Bewertungskriterien:</h4>
                     <ul className="space-y-1 text-gray-600">
-                      <li>{t('student.news_timeliness')}</li>
-                      <li>{t('student.student_keywords')}</li>
-                      <li>{t('student.trusted_sources')}</li>
-                      <li>{t('student.practical_application')}</li>
+                      <li>• Aktualität der Nachrichten</li>
+                      <li>• Studenten-relevante Keywords</li>
+                      <li>• Vertrauenswürdige Quellen</li>
+                      <li>• Praktische Anwendbarkeit</li>
                     </ul>
                   </div>
                 </div>
@@ -278,17 +277,17 @@ const StudentNews = () => {
             <CardContent className="py-12 text-center">
               <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {t('student.no_articles_found')}
+                Keine studenten-relevanten Artikel gefunden
               </h3>
               <p className="text-gray-600 mb-4">
-                {t('student.no_articles_desc')}
+                Momentan sind keine Artikel verfügbar, die unseren Kriterien entsprechen.
               </p>
               <Button 
                 onClick={fetchStudentRelevantNews} 
                 variant="outline"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {t('main.try_again')}
+                Erneut versuchen
               </Button>
             </CardContent>
           </Card>

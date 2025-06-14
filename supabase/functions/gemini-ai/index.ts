@@ -18,7 +18,7 @@ serve(async (req) => {
     if (!geminiApiKey) {
       console.error('GEMINI_API_KEY not found in environment');
       return new Response(
-        JSON.stringify({ error: 'Gemini API Key not configured' }), 
+        JSON.stringify({ error: 'Gemini API Key nicht konfiguriert' }), 
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -46,7 +46,7 @@ serve(async (req) => {
       
       default:
         return new Response(
-          JSON.stringify({ error: 'Unknown action' }), 
+          JSON.stringify({ error: 'Unbekannte Aktion' }), 
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -87,34 +87,32 @@ async function verifyGeminiKey(apiKey: string) {
 
     if (response.ok) {
       return new Response(
-        JSON.stringify({ isValid: true, message: "Gemini API key is valid" }), 
+        JSON.stringify({ isValid: true, message: "Gemini API-Schlüssel ist gültig" }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
       const errorData = await response.json().catch(() => null);
       const errorMessage = errorData?.error?.message || `HTTP ${response.status}`;
       return new Response(
-        JSON.stringify({ isValid: false, message: `API key invalid: ${errorMessage}` }), 
+        JSON.stringify({ isValid: false, message: `API-Schlüssel ungültig: ${errorMessage}` }), 
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
   } catch (error) {
     return new Response(
-      JSON.stringify({ isValid: false, message: `Connection error: ${error.message}` }), 
+      JSON.stringify({ isValid: false, message: `Verbindungsfehler: ${error.message}` }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
 
 async function generateSummary(apiKey: string, data: any) {
-  const { digest, selectedArticles, linkedInPage, language = 'de' } = data;
+  const { digest, selectedArticles, linkedInPage } = data;
   const articlesToUse = selectedArticles || digest.items;
-  const isGerman = language === 'de';
   
   if (articlesToUse.length === 0) {
-    const errorMsg = isGerman ? "Keine Artikel für die Zusammenfassung verfügbar" : "No articles available for summary";
     return new Response(
-      JSON.stringify({ error: errorMsg }), 
+      JSON.stringify({ error: "Keine Artikel für die Zusammenfassung verfügbar" }), 
       { 
         status: 400, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -122,19 +120,18 @@ async function generateSummary(apiKey: string, data: any) {
     );
   }
 
-  // Create language-specific article details
+  // Erstelle einen detaillierten, studentenorientierten Prompt basierend auf den tatsächlichen Artikeln
   const articleDetails = articlesToUse.map((article: any, index: number) => `
-**${isGerman ? 'ARTIKEL' : 'ARTICLE'} ${index + 1}:**
-${isGerman ? 'Titel' : 'Title'}: "${article.title}"
-${isGerman ? 'Beschreibung' : 'Description'}: "${article.description || (isGerman ? 'Keine Beschreibung verfügbar' : 'No description available')}"
-${isGerman ? 'Quelle' : 'Source'}: ${article.sourceName || (isGerman ? 'Unbekannte Quelle' : 'Unknown Source')}
-${isGerman ? 'Datum' : 'Date'}: ${article.pubDate}
+**ARTIKEL ${index + 1}:**
+Titel: "${article.title}"
+Beschreibung: "${article.description || 'Keine Beschreibung verfügbar'}"
+Quelle: ${article.sourceName || 'Unbekannte Quelle'}
+Datum: ${article.pubDate}
 Link: ${article.link}
-${article.content ? `${isGerman ? 'Inhalt' : 'Content'}: "${article.content.substring(0, 500)}..."` : ''}
+${article.content ? `Inhalt: "${article.content.substring(0, 500)}..."` : ''}
 `).join('\n');
 
-  // Language-specific newsletter prompts
-  const prompt = isGerman ? `Du schreibst als Student für Studenten den Newsletter "LINKIT WEEKLY" - für eine HOCHSCHULGRUPPE zu KI, Data Science und Machine Learning. 
+  const prompt = `Du schreibst als Student für Studenten den Newsletter "LINKIT WEEKLY" - für eine HOCHSCHULGRUPPE zu KI, Data Science und Machine Learning. 
 
 **ZIELGRUPPE:** 
 - Studierende in Informatik, Data Science, Mathematik, Ingenieurswissenschaften
@@ -192,67 +189,7 @@ Für jeden Artikel:
 **NEWSLETTER-INHALT basierend auf diesen Artikeln:**
 ${articleDetails}
 
-WICHTIG: Bleibe strikt bei den Inhalten der bereitgestellten Artikel. Erfinde keine Details, Kurse oder technischen Zusammenhänge, die nicht explizit erwähnt werden! Verwende eine natürliche, studentische Begrüßung OHNE formelle Glückwünsche!` : 
-
-`You are writing as a student for students the newsletter "LINKIT WEEKLY" - for a UNIVERSITY GROUP about AI, Data Science and Machine Learning.
-
-**TARGET AUDIENCE:**
-- Students in Computer Science, Data Science, Mathematics, Engineering
-- Bachelor and Master students interested in AI and ML
-- Young people looking for practical applications and career opportunities
-- Community of tech-enthusiastic students
-
-**STRICT RULES FOR FACTUAL ACCURACY:**
-- Use EXCLUSIVELY information from the provided articles
-- NEVER invent references to specific university courses or professors
-- NEVER invent technical details not mentioned in the articles
-- When making connections to study content, stay general ("in ML courses", "in Data Science projects")
-- Do NOT use specific course names like "CS229" or "Deep Learning Lecture"
-
-**NEWSLETTER STYLE (natural and student-friendly):**
-- Start with natural, casual greetings like "Hi!", "What's up!", "Hey everyone!", "Hey folks!" or simply "Hey"
-- AVOID formal greetings like "Congratulations", "Welcome to our newsletter" or stiff formulations
-- Write directly and personally ("you", "your"), but authentically and relaxed
-- Avoid excessive formality or business language
-- Be enthusiastic but natural - like a student writing to other students
-- Focus on practical relevance for studies
-
-**STRUCTURE for Week ${digest.weekNumber}/${digest.year} (${digest.dateRange}):**
-
-# 📬 LINKIT WEEKLY Week ${digest.weekNumber}
-**Your update on AI, Data Science and Industry 4.0**
-
-Week ${digest.weekNumber} · ${digest.dateRange}
-
-**Intro with natural, casual greeting:**
-- Use a relaxed, authentic greeting (NO formal congratulations!)
-- Brief, personal introduction without clichés
-- What to expect this week
-
-**Main section - Article analyses (ONLY based on real content):**
-For each article:
-- **Meaningful headline** with the core of the article
-- 2-3 paragraphs detailed analysis of the ACTUAL content
-- **Why this is relevant for you:** Practical significance for students
-- General connections to study content (WITHOUT specific course names)
-- Possible applications in your own projects
-- 👉 **Read more** [Link to article]
-
-**Conclusion:**
-- Summary of the most important insights
-- Casual ending with community call
-
-**IMPORTANT STYLE ELEMENTS:**
-- Authentic, casual language without formalities or stiff greetings
-- Explain AI concepts understandably, but stick to facts
-- Mention tools and technologies only if they appear in the articles
-- At least 1500-2000 words for detailed analyses
-- Enthusiastic but fact-based tone like among students
-
-**NEWSLETTER CONTENT based on these articles:**
-${articleDetails}
-
-IMPORTANT: Stay strictly with the content of the provided articles. Don't invent details, courses or technical connections not explicitly mentioned! Use a natural, student greeting WITHOUT formal congratulations!`;
+WICHTIG: Bleibe strikt bei den Inhalten der bereitgestellten Artikel. Erfinde keine Details, Kurse oder technischen Zusammenhänge, die nicht explizit erwähnt werden! Verwende eine natürliche, studentische Begrüßung OHNE formelle Glückwünsche!`;
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -267,34 +204,46 @@ IMPORTANT: Stay strictly with the content of the provided articles. Don't invent
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4000,
+          temperature: 0.3, // Leicht erhöht für natürlicheren studentischen Stil
+          topK: 30,
+          topP: 0.9,
+          maxOutputTokens: 5000, // Erhöht für längere, detailliertere Inhalte
         }
       })
     });
 
-    const result = await response.json();
-    
-    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-      const summary = result.candidates[0].content.parts[0].text;
-      return new Response(
-        JSON.stringify({ summary }), 
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      const errorMsg = isGerman ? "Keine gültige Antwort von Gemini erhalten" : "No valid response received from Gemini";
-      return new Response(
-        JSON.stringify({ error: errorMsg, details: result }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = `Gemini API Fehler: ${response.status} - ${errorData?.error?.message || response.statusText}`;
+      throw new Error(errorMessage);
     }
-  } catch (error) {
-    console.error('Error generating summary:', error);
+
+    const responseData = await response.json();
+    
+    if (!responseData.candidates || !responseData.candidates[0] || !responseData.candidates[0].content || !responseData.candidates[0].content.parts || !responseData.candidates[0].content.parts[0]) {
+      throw new Error("Unerwartete Antwort von der Gemini API");
+    }
+
+    let content = responseData.candidates[0].content.parts[0].text;
+    
+    if (!content || content.trim().length === 0) {
+      throw new Error("Gemini API hat leeren Inhalt zurückgegeben");
+    }
+    
+    // Add LinkedIn reference with student-friendly context if not present and linkedInPage is provided
+    if (linkedInPage && !content.includes("linkedin.com/company/linkit-karlsruhe")) {
+      content += `\n\n---\n\n**Bleibt connected! 🤝**\nFür weitere Updates, Diskussionen und Community-Events folgt uns auf [LinkedIn](${linkedInPage}). Dort teilen wir auch Infos zu Workshops, Gastvorträgen und Networking-Möglichkeiten!`;
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }), 
+      JSON.stringify({ content }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error("Error generating summary:", error);
+    return new Response(
+      JSON.stringify({ error: `Fehler bei der Newsletter-Generierung: ${error.message}` }), 
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -304,58 +253,34 @@ IMPORTANT: Stay strictly with the content of the provided articles. Don't invent
 }
 
 async function generateArticleSummary(apiKey: string, data: any) {
-  const { article, language = 'de' } = data;
-  const isGerman = language === 'de';
+  const { article } = data;
   
-  if (!article || !article.title) {
-    const errorMsg = isGerman ? "Artikel-Daten fehlen" : "Article data missing";
-    return new Response(
-      JSON.stringify({ error: errorMsg }), 
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-
-  const prompt = isGerman ? 
-    `Du hilfst Studierenden einer KI und Data Science Hochschulgruppe beim Verstehen von tech-Artikeln von "The Decoder" und ähnlichen KI-News-Quellen.
+  console.log('Generating summary for article:', article.title);
+  console.log('Article content available:', !!article.content);
+  console.log('Article description:', article.description?.substring(0, 100));
+  
+  // Improved prompt for The Decoder articles with better content extraction
+  const articleContent = article.content || article.description || 'Nur Titel verfügbar';
+  const cleanContent = articleContent.replace(/<[^>]*>/g, '').substring(0, 1000); // Remove HTML tags and limit length
+  
+  const prompt = `Du hilfst Studierenden einer KI und Data Science Hochschulgruppe beim Verstehen von tech-Artikeln von "The Decoder" und ähnlichen KI-News-Quellen. 
 
 WICHTIG: Verwende nur Informationen aus dem bereitgestellten Artikel. Erfinde keine Details oder Verbindungen, die nicht explizit erwähnt werden.
 
 Fasse diesen deutschen KI-Artikel in 2-3 prägnanten Sätzen zusammen und erkläre kurz, warum er für Studierende relevant ist:
+              
+**Titel:** ${article.title}
+**Quelle:** ${article.sourceName || 'The Decoder'}
+**Inhalt/Beschreibung:** ${cleanContent}
+**Link:** ${article.link}
 
-Titel: "${article.title}"
-Beschreibung: "${article.description || 'Keine Beschreibung verfügbar'}"
-Inhalt: "${article.content || article.description || 'Kein Inhalt verfügbar'}"
-Quelle: ${article.sourceName || 'Unbekannte Quelle'}
-
-ANWEISUNGEN:
+**Aufgabe:**
 1. Erstelle eine präzise 2-3 Satz Zusammenfassung des TATSÄCHLICHEN Artikelinhalts
-2. Erkläre in 1-2 Sätzen die Relevanz für KI/Data Science Studierende
-3. Verwende eine freundliche, studentische Sprache
+2. Erkläre die praktische Relevanz für KI/Data Science Studierende
+3. Verwende einen lockeren, studentenfreundlichen Ton
 4. Bleibe bei den Fakten aus dem Artikel - erfinde nichts dazu
 
-Antworte auf Deutsch und basiere deine Zusammenfassung nur auf den tatsächlichen Inhalten des Artikels.` :
-
-    `You help students from an AI and Data Science university group understand tech articles from "The Decoder" and similar AI news sources.
-
-IMPORTANT: Use only information from the provided article. Don't invent details or connections not explicitly mentioned.
-
-Summarize this AI article in 2-3 concise sentences and briefly explain why it's relevant for students:
-
-Title: "${article.title}"
-Description: "${article.description || 'No description available'}"
-Content: "${article.content || article.description || 'No content available'}"
-Source: ${article.sourceName || 'Unknown source'}
-
-INSTRUCTIONS:
-1. Create a precise 2-3 sentence summary of the ACTUAL article content
-2. Explain in 1-2 sentences the relevance for AI/Data Science students
-3. Use friendly, student-oriented language
-4. Stick to facts from the article - don't invent anything
-
-Answer in English and base your summary only on the actual content of the article.`;
+Stil: Faktisch korrekt, wissenschaftlich aber zugänglich, direkt und studentenfreundlich. Fokus auf praktische Anwendungen im Studium, aber nur basierend auf den tatsächlichen Inhalten des Artikels.`;
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -371,31 +296,34 @@ Answer in English and base your summary only on the actual content of the articl
         }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 400,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 300, // Increased for better summaries
         }
       })
     });
 
-    const result = await response.json();
-    
-    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-      const summary = result.candidates[0].content.parts[0].text;
-      return new Response(
-        JSON.stringify({ summary }), 
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      const errorMsg = isGerman ? "Keine gültige Antwort von Gemini erhalten" : "No valid response received from Gemini";
-      return new Response(
-        JSON.stringify({ error: errorMsg }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(`Gemini API Fehler: ${response.status} - ${errorData?.error?.message || response.statusText}`);
     }
+
+    const responseData = await response.json();
+    
+    if (!responseData.candidates || !responseData.candidates[0] || !responseData.candidates[0].content || !responseData.candidates[0].content.parts || !responseData.candidates[0].content.parts[0]) {
+      throw new Error("Unerwartete Antwort von der Gemini API");
+    }
+
+    const summary = responseData.candidates[0].content.parts[0].text;
+    console.log('Generated summary:', summary.substring(0, 100));
+
+    return new Response(
+      JSON.stringify({ summary }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    console.error('Error generating article summary:', error);
+    console.error("Error generating article summary:", error);
     return new Response(
       JSON.stringify({ error: error.message }), 
       { 
@@ -407,52 +335,29 @@ Answer in English and base your summary only on the actual content of the articl
 }
 
 async function improveArticleTitle(apiKey: string, data: any) {
-  const { article, language = 'de' } = data;
-  const isGerman = language === 'de';
+  const { article } = data;
   
-  if (!article || !article.title) {
-    const errorMsg = isGerman ? "Artikel-Daten für Titel-Verbesserung fehlen" : "Article data for title improvement missing";
-    return new Response(
-      JSON.stringify({ error: errorMsg }), 
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-
-  const prompt = isGerman ?
-    `Du hilfst dabei, Artikel-Titel für eine deutsche KI und Data Science Hochschulgruppe zu verbessern.
+  console.log('Improving title for article:', article.title);
+  
+  const prompt = `Du hilfst dabei, Artikel-Titel für eine deutsche KI und Data Science Hochschulgruppe zu verbessern.
 
 Verbessere den folgenden Artikel-Titel, damit er für deutsche KI/Data Science Studierende ansprechender und verständlicher wird:
 
-Aktueller Titel: "${article.title}"
-Beschreibung: "${article.description || 'Keine Beschreibung verfügbar'}"
+**Aktueller Titel:** ${article.title}
+**Quelle:** ${article.sourceName || 'Unbekannt'}
+**Link:** ${article.link}
+${article.description ? `**Beschreibung:** ${article.description.substring(0, 200)}...` : ''}
 
-ANWEISUNGEN:
-1. Mache den Titel prägnanter und studentenfreundlicher
-2. Verwende deutsche Begriffe, die für Studierende verständlich sind
-3. Bewahre die Kernaussage des ursprünglichen Titels
-4. Mache ihn interessanter ohne zu übertreiben
-5. Maximal 10-12 Wörter
+**Aufgabe:**
+1. Erstelle einen verbesserten deutschen Titel (max. 80 Zeichen)
+2. Der Titel soll technisch korrekt aber studentenfreundlich sein
+3. Verwende klare, präzise Sprache ohne Clickbait
+4. Fokussiere auf die praktische Relevanz für KI/Data Science Studierende
+5. Behebe sprachliche Fehler oder unklare Formulierungen
 
-Antworte NUR mit dem verbesserten Titel auf Deutsch.` :
+**Stil:** Professionell aber zugänglich, direkt und informativ. Der Titel soll das Interesse wecken ohne zu übertreiben.
 
-    `You help improve article titles for a German AI and Data Science university group.
-
-Improve the following article title to make it more appealing and understandable for AI/Data Science students:
-
-Current title: "${article.title}"
-Description: "${article.description || 'No description available'}"
-
-INSTRUCTIONS:
-1. Make the title more concise and student-friendly
-2. Use English terms that are understandable for students
-3. Preserve the core message of the original title
-4. Make it more interesting without exaggerating
-5. Maximum 10-12 words
-
-Respond ONLY with the improved title in English.`;
+Antworte nur mit dem verbesserten Titel, ohne zusätzliche Erklärungen oder Anführungszeichen.`;
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -467,135 +372,92 @@ Respond ONLY with the improved title in English.`;
           }]
         }],
         generationConfig: {
-          temperature: 0.5,
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
           maxOutputTokens: 100,
         }
       })
     });
 
-    const result = await response.json();
-    
-    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-      const improvedTitle = result.candidates[0].content.parts[0].text.trim();
-      return new Response(
-        JSON.stringify({ improvedTitle }), 
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      const errorMsg = isGerman ? "Keine gültige Antwort von Gemini erhalten" : "No valid response received from Gemini";
-      return new Response(
-        JSON.stringify({ error: errorMsg }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(`Gemini API Fehler: ${response.status} - ${errorData?.error?.message || response.statusText}`);
     }
+
+    const responseData = await response.json();
+    
+    if (!responseData.candidates || !responseData.candidates[0] || !responseData.candidates[0].content || !responseData.candidates[0].content.parts || !responseData.candidates[0].content.parts[0]) {
+      throw new Error("Unerwartete Antwort von der Gemini API");
+    }
+
+    const improvedTitle = responseData.candidates[0].content.parts[0].text.trim();
+    console.log('Improved title generated:', improvedTitle.substring(0, 50));
+
+    return new Response(
+      JSON.stringify({ improvedTitle }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    console.error('Error improving article title:', error);
+    console.error("Error improving article title:", error);
     return new Response(
       JSON.stringify({ error: error.message }), 
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
 
 async function qaWithNewsletter(apiKey: string, data: any) {
-  const { question, newsletter, language = 'de' } = data;
-  const isGerman = language === 'de';
-  
+  const { question, newsletter } = data || {};
+
   if (!question || !newsletter) {
-    const errorMsg = isGerman ? "Frage oder Newsletter-Inhalt fehlt" : "Question or newsletter content missing";
     return new Response(
-      JSON.stringify({ error: errorMsg }), 
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: "question und newsletter sind Pflichtfelder" }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  const prompt = isGerman ?
-    `Du bist ein hilfsreicher Assistent für Studierende einer KI und Data Science Hochschulgruppe. Beantworte die folgende Frage basierend auf dem bereitgestellten Newsletter-Inhalt und den Artikeln.
+  const prompt = `Beantworte die Frage bezugnehmend auf: ${newsletter}
 
-NEWSLETTER/ARTIKEL-INHALT:
-${newsletter}
+Die Frage lautet: ${question}
 
-FRAGE: ${question}
-
-ANWEISUNGEN:
-1. Beantworte die Frage detailliert und hilfreich auf Deutsch
-2. Verwende nur Informationen aus dem bereitgestellten Newsletter/Artikel-Inhalt
-3. Wenn du auf spezifische Artikel verweist, verwende das Format "Artikel X" (z.B. "Artikel 1", "Artikel 2")
-4. Erkläre komplexe Konzepte studentenfreundlich
-5. Bleibe bei den Fakten - erfinde keine zusätzlichen Details
-
-Gib eine ausführliche, hilfreiche Antwort auf Deutsch.` :
-
-    `You are a helpful assistant for students of an AI and Data Science university group. Answer the following question based on the provided newsletter content and articles.
-
-NEWSLETTER/ARTICLE CONTENT:
-${newsletter}
-
-QUESTION: ${question}
-
-INSTRUCTIONS:
-1. Answer the question in detail and helpfully in English
-2. Use only information from the provided newsletter/article content
-3. When referring to specific articles, use the format "Article X" (e.g. "Article 1", "Article 2")
-4. Explain complex concepts in a student-friendly way
-5. Stick to facts - don't invent additional details
-
-Give a comprehensive, helpful answer in English.`;
+Anweisungen:
+- Beziehe dich nur auf die Informationen aus dem bereitgestellten Newsletter-Inhalt
+- Antworte präzise und hilfreich auf Deutsch
+- Falls die Information nicht im Newsletter-Inhalt vorhanden ist, sage das ehrlich
+- Strukturiere deine Antwort klar und verständlich für Studierende
+- Verwende einen freundlichen, aber informativen Ton`;
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1000,
-        }
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, topK: 40, topP: 0.95, maxOutputTokens: 2048 }
       })
     });
 
-    const result = await response.json();
-    
-    if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-      const content = result.candidates[0].content.parts[0].text;
-      return new Response(
-        JSON.stringify({ content, answer: content }), 
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      const errorMsg = isGerman ? "Keine gültige Antwort von Gemini erhalten" : "No valid response received from Gemini";
-      return new Response(
-        JSON.stringify({ error: errorMsg }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    if (!response.ok) {
+      const errData = await response.json().catch(() => null);
+      throw new Error(`Gemini API Fehler: ${response.status} - ${errData?.error?.message || response.statusText}`);
     }
-  } catch (error) {
-    console.error('Error in QA with newsletter:', error);
+
+    const respData = await response.json();
+    const content = respData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
     return new Response(
-      JSON.stringify({ error: error.message }), 
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ content }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error qa-with-newsletter:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }

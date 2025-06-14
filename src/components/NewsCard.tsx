@@ -102,18 +102,18 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
         
         if (error) {
           console.error("Error deleting article from database:", error);
-          toast.error(t('common.error'));
+          toast.error("Fehler beim Löschen des Artikels aus der Datenbank");
           return;
         }
         
-        toast.success(t('news.removed_from_overview'));
+        toast.success("Artikel erfolgreich aus der Datenbank gelöscht");
       }
       
       // Call the parent's onDelete handler
       onDelete(item);
     } catch (error) {
       console.error("Error deleting article:", error);
-      toast.error(t('common.error'));
+      toast.error("Fehler beim Löschen des Artikels");
     } finally {
       setIsDeleting(false);
     }
@@ -154,8 +154,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
               title: localTitle,
               content: item.content || item.description || '',
               description: item.description || ''
-            },
-            language: language
+            }
           }
         }
       });
@@ -208,13 +207,13 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
 
       if (error) {
         console.error("Supabase function error:", error);
-        toast.error(t('common.error'));
+        toast.error("Fehler bei der Titel-Verbesserung");
         return;
       }
 
       if (data.error) {
         console.error("Gemini API Error:", data.error);
-        toast.error(t('common.error'));
+        toast.error("Fehler bei der Titel-Verbesserung");
         return;
       }
 
@@ -235,10 +234,10 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
 
           if (updateError) {
             console.error("Error saving improved title to database:", updateError);
-            toast.error(t('common.error'));
+            toast.error("Titel verbessert, aber Speicherung fehlgeschlagen");
           } else {
             console.log("✅ Improved title saved to database successfully");
-            toast.success(t('common.success'));
+            toast.success("Titel verbessert und dauerhaft gespeichert");
             
             // Parent Component über Änderung informieren
             if (onTitleImproved) {
@@ -247,7 +246,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
           }
         } else {
           // Fallback für Artikel ohne GUID (sollte nicht vorkommen)
-          toast.success(t('common.success'));
+          toast.success("Titel verbessert (nur für diese Sitzung)");
           if (onTitleImproved) {
             onTitleImproved(item, data.improvedTitle);
           }
@@ -255,11 +254,11 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
         
         console.log("Article title improved successfully:", data.improvedTitle);
       } else {
-        toast.error(t('common.error'));
+        toast.error("Kein verbesserter Titel erhalten");
       }
     } catch (error) {
       console.error("Error improving article title:", error);
-      toast.error(t('common.error'));
+      toast.error("Fehler bei der Titel-Verbesserung");
     } finally {
       setIsImprovingTitle(false);
     }
@@ -288,7 +287,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
           {isCustomArticle && (
             <div className="absolute top-3 left-3 z-10">
               <Badge variant="custom" className="shadow-lg">
-                {t('main.custom_article_label')}
+                Eigener Artikel
               </Badge>
             </div>
           )}
@@ -314,7 +313,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
                   improveTitle();
                 }}
                 disabled={isImprovingTitle}
-                title={t('news.ai_summary')}
+                title="Titel mit KI verbessern"
               >
                 <Edit3 className="h-3 w-3" />
               </Button>
@@ -322,7 +321,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
             {!imageUrl && isCustomArticle && (
               <div className="mt-2">
                 <Badge variant="custom" className="shadow-sm">
-                  {t('main.custom_article_label')}
+                  Eigener Artikel
                 </Badge>
               </div>
             )}
@@ -338,7 +337,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
                   handleDelete();
                 }}
                 disabled={isDeleting}
-                title={t('selection.delete_permanently')}
+                title="Artikel löschen"
               >
                 {isDeleting ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />

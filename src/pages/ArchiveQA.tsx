@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Home, Mail, Archive, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import NewsletterArchiveQA from "@/components/NewsletterArchiveQA";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 const ArchiveQA = () => {
-  const { t } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -20,7 +18,7 @@ const ArchiveQA = () => {
                 <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
                   <Archive className="h-5 w-5 text-white" />
                 </div>
-                <span className="ml-2 text-xl font-bold text-gray-900">{t('archive.title')}</span>
+                <span className="ml-2 text-xl font-bold text-gray-900">KI News Digest</span>
               </Link>
             </div>
 
@@ -31,21 +29,21 @@ const ArchiveQA = () => {
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 <Home className="h-4 w-4" />
-                {t('nav.home')}
+                Home
               </Link>
               <Link 
                 to="/newsletter" 
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 <Mail className="h-4 w-4" />
-                {t('nav.newsletter')}
+                Newsletter
               </Link>
               <Link 
                 to="/archive-qa" 
                 className="flex items-center gap-2 text-primary font-medium px-3 py-2 rounded-md text-sm bg-primary/10 transition-colors"
               >
                 <Archive className="h-4 w-4" />
-                {t('nav.archive')}
+                Archiv Q&A
               </Link>
             </div>
 
@@ -72,7 +70,7 @@ const ArchiveQA = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Home className="h-4 w-4" />
-                {t('nav.home')}
+                Home
               </Link>
               <Link 
                 to="/newsletter" 
@@ -80,7 +78,7 @@ const ArchiveQA = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Mail className="h-4 w-4" />
-                {t('nav.newsletter')}
+                Newsletter
               </Link>
               <Link 
                 to="/archive-qa" 
@@ -88,7 +86,7 @@ const ArchiveQA = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Archive className="h-4 w-4" />
-                {t('nav.archive')}
+                Archiv Q&A
               </Link>
             </div>
           </div>
@@ -105,10 +103,10 @@ const ArchiveQA = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-600">
             <p className="text-sm">
-              {t('archive.footer_title')}
+              KI News Digest - Newsletter-Archiv Q&A System für Studierende
             </p>
             <p className="text-xs mt-1">
-              {t('archive.footer_desc')}
+              Durchsuchen Sie alle vergangenen Newsletter und stellen Sie Fragen zu KI-Trends und Entwicklungen
             </p>
           </div>
         </div>

@@ -24,7 +24,6 @@ interface ChatMessage {
 }
 
 const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutProps) => {
-  const { t, language } = useLanguage();
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -215,55 +214,65 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
   };
 
   const handleAskQuestion = async () => {
-    if (!question.trim() || isLoading) return;
-    
-    setIsLoading(true);
-    
+    if (!question.trim()) {
+      toast.error("Bitte geben Sie eine Frage ein");
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: question,
       timestamp: new Date()
     };
-    
+
     setChatHistory(prev => [...prev, userMessage]);
+    setIsLoading(true);
     
     try {
-      let contextualPrompt = '';
+      console.log("Asking question about newsletter articles:", question);
+      console.log("Articles available:", articles.length);
+      console.log("Newsletter content available:", !!newsletterContent);
+      
+      // Prepare context from articles and newsletter
+      const articlesContext = articles.map(article => ({
+        title: article.title,
+        description: article.description || '',
+        sourceName: article.sourceName,
+        pubDate: article.pubDate,
+        link: article.link,
+        content: article.content || article.description || ''
+      }));
+
+      console.log("Prepared articles context:", articlesContext.length);
+
+      // Create enhanced prompt that includes newsletter content
+      let contextualPrompt = `Beantworte die folgende Frage basierend auf dem kompletten Newsletter-Inhalt und den zugehörigen Artikeln: "${question}"\n\n`;
       
       if (newsletterContent) {
-        contextualPrompt = `NEWSLETTER-INHALT:\n${newsletterContent}\n\n`;
+        contextualPrompt += `NEWSLETTER-INHALT:\n${newsletterContent}\n\n`;
+        contextualPrompt += `Zusätzlich sind hier die ursprünglichen Artikel, auf denen der Newsletter basiert:\n\n`;
+      } else {
+        contextualPrompt += `Basiere deine Antwort auf den folgenden Artikeln:\n\n`;
       }
       
-      contextualPrompt += `VERFÜGBARE ARTIKEL:\n`;
-      articles.forEach((article, index) => {
-        contextualPrompt += `\nArtikel ${index + 1}:\n`;
-        contextualPrompt += `Titel: ${article.title}\n`;
-        contextualPrompt += `Beschreibung: ${article.description}\n`;
-        contextualPrompt += `Link: ${article.link}\n`;
-                 if (article.aiSummary) {
-           contextualPrompt += `Zusammenfassung: ${article.aiSummary}\n`;
-         }
+      contextualPrompt += `ARTIKEL-DETAILS:\n`;
+      articlesContext.forEach((article, index) => {
+        contextualPrompt += `Artikel ${index + 1}: ${article.title}\n`;
+        contextualPrompt += `   Quelle: ${article.sourceName}\n`;
+        contextualPrompt += `   Link: ${article.link}\n`;
+        contextualPrompt += `   Beschreibung: ${article.description}\n`;
+        if (article.content && article.content !== article.description) {
+          contextualPrompt += `   Inhalt: ${article.content.substring(0, 300)}...\n`;
+        }
         contextualPrompt += `\n`;
       });
       
-      // Use language-dependent prompt
-      const isGerman = language === 'de';
-      const responseLanguage = isGerman ? 'Deutsch' : 'English';
-      const articleRef = isGerman ? 'Artikel' : 'Article';
-      const instructionText = isGerman 
-        ? `Gib eine detaillierte, hilfreiche Antwort auf ${responseLanguage}. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'}`
-        : `Give a detailed, helpful answer in ${responseLanguage}. ${newsletterContent ? 'Refer to both the newsletter content and the original articles.' : 'Refer specifically to the relevant articles and their content.'}`;
-      
-      const formatInstruction = isGerman
-        ? `\n\nWICHTIG: Wenn du auf spezifische Artikel verweist, verwende IMMER das Format "${articleRef} X" (z.B. "${articleRef} 1", "${articleRef} 2"), damit diese automatisch zu klickbaren Links werden. Beispiel: "Wie in ${articleRef} 3 beschrieben..." oder "${articleRef} 1 und ${articleRef} 5 zeigen...".`
-        : `\n\nIMPORTANT: When referring to specific articles, ALWAYS use the format "${articleRef} X" (e.g. "${articleRef} 1", "${articleRef} 2") so these become clickable links automatically. Example: "As described in ${articleRef} 3..." or "${articleRef} 1 and ${articleRef} 5 show..."`;
-      
-      const sourceInstruction = isGerman
-        ? `\n\nNenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`
-        : `\n\nCite specific articles or sections from the newsletter as sources.`;
-      
-      contextualPrompt += instructionText + formatInstruction + sourceInstruction;
+      contextualPrompt += `\nGib eine detaillierte, hilfreiche Antwort auf Deutsch. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'} 
+
+WICHTIG: Wenn du auf spezifische Artikel verweist, verwende IMMER das Format "Artikel X" (z.B. "Artikel 1", "Artikel 2"), damit diese automatisch zu klickbaren Links werden. Beispiel: "Wie in Artikel 3 beschrieben..." oder "Artikel 1 und Artikel 5 zeigen...".
+
+Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
       // Use qa-with-newsletter action for proper Q&A functionality
       const { data, error } = await supabase.functions.invoke('gemini-ai', {
@@ -271,8 +280,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
           action: 'qa-with-newsletter',
           data: { 
             question: question,
-            newsletter: newsletterContent || contextualPrompt,
-            language: language // Pass the current language
+            newsletter: newsletterContent || contextualPrompt
           }
         }
       });
@@ -329,9 +337,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (question.trim() && !isLoading) {
-        handleAskQuestion();
-      }
+      handleAskQuestion();
     }
   };
 
@@ -431,7 +437,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
             </div>
             <div>
               <CardTitle className="text-lg font-bold text-gray-900">
-                {t('qa.newsletter_questions')}
+                Fragen zum Newsletter
               </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
                 Stellen Sie Fragen zu den {articles.length} Artikeln {newsletterContent ? 'und dem Newsletter-Inhalt' : 'in diesem Newsletter'}
@@ -544,24 +550,24 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="outline" className="text-xs">
-              {articles.length} {t('qa.articles_available')}
+              {articles.length} Artikel verfügbar
             </Badge>
             {newsletterContent && (
               <Badge variant="outline" className="text-xs">
-                {t('qa.newsletter_content_available')}
+                Newsletter-Inhalt verfügbar
               </Badge>
             )}
           </div>
 
           <div className="space-y-2">
             <label htmlFor="question" className="text-sm font-medium text-gray-700">
-              {t('qa.your_question')}
+              Ihre Frage:
             </label>
             <Textarea
               id="question"
               placeholder={newsletterContent 
-                ? t('qa.newsletter_placeholder')
-                : t('qa.article_placeholder')
+                ? "Z.B. 'Welche KI-Trends werden im Newsletter diskutiert?' oder nutzen Sie die Spracheingabe..."
+                : "Z.B. 'Welche KI-Trends werden in den Artikeln diskutiert?' oder nutzen Sie die Spracheingabe..."
               }
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -583,7 +589,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              {isLoading ? t('qa.analyzing') : t('qa.ask_question')}
+              {isLoading ? "Analysiere..." : "Frage stellen"}
             </Button>
             
             {/* Voice Input Button */}
@@ -601,7 +607,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="h-4 w-4 text-blue-600" />
               <p className="text-sm font-medium text-gray-700">
-                {t('qa.smart_suggestions')}
+                Intelligente Fragevorschläge:
               </p>
               <Button 
                 variant="ghost" 
