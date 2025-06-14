@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to convert ArrayBuffer to base64 in chunks (memory-safe)
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 8192; // 8KB chunks
+  let result = '';
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    result += String.fromCharCode(...chunk);
+  }
+  
+  return btoa(result);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -138,6 +152,22 @@ async function textToSpeech(apiKey: string, data: any) {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
+      } else if (response.status === 400) {
+        return new Response(
+          JSON.stringify({ error: 'Ungültige Anfrage. Bitte überprüfen Sie den Text oder die Einstellungen.' }), 
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      } else if (response.status === 500) {
+        return new Response(
+          JSON.stringify({ error: 'Interner Serverfehler bei Eleven Labs. Bitte versuchen Sie es später erneut.' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       } else {
         return new Response(
           JSON.stringify({ error: `Fehler bei der Sprachgenerierung: ${response.status}` }), 
@@ -151,16 +181,21 @@ async function textToSpeech(apiKey: string, data: any) {
 
     // Get the audio blob
     const audioBlob = await response.blob();
+    console.log(`📊 Audio blob size: ${audioBlob.size} bytes`);
     
-    // Convert blob to base64 for transmission
+    // Convert blob to base64 using memory-safe chunked processing
     const buffer = await audioBlob.arrayBuffer();
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    console.log(`🔄 Converting ${buffer.byteLength} bytes to base64...`);
+    
+    const base64Audio = arrayBufferToBase64(buffer);
+    console.log(`✅ Base64 conversion complete: ${base64Audio.length} characters`);
     
     return new Response(
       JSON.stringify({ 
         audioBase64: base64Audio,
         mimeType: 'audio/mpeg',
-        textLength: textToSpeak.length
+        textLength: textToSpeak.length,
+        audioSize: buffer.byteLength
       }), 
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
