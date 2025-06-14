@@ -553,10 +553,9 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     {displayArticles.map((article, index) => (
                       <NewsCard
                         key={getArticleId(article)}
-                        article={article}
-                        index={index}
-                        onTitleImproved={handleTitleImproved}
+                        item={article}
                         onDelete={handleDeleteArticle}
+                        onTitleImproved={handleTitleImproved}
                       />
                     ))}
                   </div>
@@ -596,3 +595,5 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
     </div>
   );
 };
+
+export default WeeklyDigest;

@@ -20,6 +20,27 @@ interface NewsCardProps {
 
 const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCardProps) => {
   const { t, language } = useLanguage();
+  
+  // Return loading state if item is undefined
+  if (!item) {
+    return (
+      <Card className="overflow-hidden h-full flex flex-col">
+        <CardHeader>
+          <Skeleton className="h-6 w-full mb-2" />
+          <div className="flex items-center justify-between mt-1">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-5 w-1/4" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <Skeleton className="h-4 w-full mb-2" />
+          <Skeleton className="h-4 w-3/4 mb-2" />
+          <Skeleton className="h-4 w-5/6" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   const { title, link, pubDate, description, categories, sourceName, aiSummary, content } = item;
   const [isOpen, setIsOpen] = useState(false);
   const [localAiSummary, setLocalAiSummary] = useState<string | null>(aiSummary || null);
