@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import NewsService, { RssItem } from '@/services/NewsService';
 import { getCurrentWeek, getCurrentYear } from '@/utils/dateUtils';
 import VoiceInput from './VoiceInput';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Newsletter {
   id: string;
@@ -54,6 +55,7 @@ const NewsletterArchiveQA = () => {
   const [currentWeekArticles, setCurrentWeekArticles] = useState<RssItem[]>([]);
   const [dynamicQuestions, setDynamicQuestions] = useState<string[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const { t } = useLanguage();
 
   // Generate year options (current year and previous years)
   const currentYear = new Date().getFullYear();
@@ -730,9 +732,9 @@ const NewsletterArchiveQA = () => {
               {chatHistory.length > 0 && (
                 <div className="space-y-4 max-h-96 overflow-y-auto border rounded-lg p-4 bg-gray-50/50">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Chat-Verlauf</h3>
+                    <h3 className="font-semibold text-gray-900">{t('qa.chat_history')}</h3>
                     <Button variant="outline" size="sm" onClick={clearChat}>
-                      Chat löschen
+                      {t('qa.clear_chat')}
                     </Button>
                   </div>
 
@@ -755,7 +757,7 @@ const NewsletterArchiveQA = () => {
                               {message.relatedNewsletters && message.relatedNewsletters.length > 0 && (
                                 <div className="mt-3 pt-3 border-t border-gray-200">
                                   <p className="text-xs font-medium text-gray-600 mb-2">
-                                    Referenzierte Newsletter:
+                                    {t('qa.reference_newsletters')}
                                   </p>
                                   <div className="flex flex-wrap gap-1">
                                     {message.relatedNewsletters.map((nl) => (
@@ -783,10 +785,10 @@ const NewsletterArchiveQA = () => {
               {/* Q&A Input with Voice Support */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-gray-700">
-                  Stellen Sie eine Frage zu den Newsletter-Archiven:
+                  {t('qa.ask_archives')}
                 </label>
                 <Textarea
-                  placeholder="Z.B. 'Welche KI-Trends wurden in den letzten Monaten diskutiert?' oder nutzen Sie die Spracheingabe..."
+                  placeholder={t('qa.archive_placeholder')}
                   value={qaQuery}
                   onChange={(e) => setQaQuery(e.target.value)}
                   onKeyPress={(e) => handleKeyPress(e, 'qa')}
@@ -806,7 +808,7 @@ const NewsletterArchiveQA = () => {
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    {isAsking ? 'Analysiere Archive...' : 'Frage stellen'}
+                    {isAsking ? t('qa.analyzing_archives') : t('qa.ask_question')}
                   </Button>
                   
                   {/* Voice Input for Q&A */}
@@ -823,7 +825,7 @@ const NewsletterArchiveQA = () => {
                       <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-blue-600" />
                         <p className="text-sm text-blue-800 font-medium">
-                          {isLoadingQuestions ? 'Lade aktuelle Fragevorschläge...' : 'Aktuelle Fragevorschläge:'}
+                          {isLoadingQuestions ? t('qa.loading_suggestions') : t('qa.current_suggestions')}
                         </p>
                       </div>
                       <Button 
@@ -875,7 +877,7 @@ const NewsletterArchiveQA = () => {
                             {/* Debug Info - zeigt erkannte Keywords */}
                             {process.env.NODE_ENV === 'development' && (
                               <details className="text-xs text-blue-600">
-                                <summary className="cursor-pointer">🔍 Debug: Erkannte Themen</summary>
+                                <summary className="cursor-pointer">🔍 {t('qa.debug_topics')}</summary>
                                 <div className="mt-1 space-y-1">
                                   {(() => {
                                     const companies = new Set<string>();
@@ -894,12 +896,12 @@ const NewsletterArchiveQA = () => {
                                     return (
                                       <>
                                         {companies.size > 0 && (
-                                          <div>🏢 Unternehmen: {Array.from(companies).join(', ')}</div>
+                                          <div>🏢 {t('qa.companies')}: {Array.from(companies).join(', ')}</div>
                                         )}
                                         {technologies.size > 0 && (
-                                          <div>⚡ Technologien: {Array.from(technologies).join(', ')}</div>
+                                          <div>⚡ {t('qa.technologies')}: {Array.from(technologies).join(', ')}</div>
                                         )}
-                                        <div>📅 Letztes Update: {new Date().toLocaleTimeString()}</div>
+                                        <div>📅 {t('qa.last_update')}: {new Date().toLocaleTimeString()}</div>
                                       </>
                                     );
                                   })()}
@@ -911,7 +913,7 @@ const NewsletterArchiveQA = () => {
                         
                         {currentWeekArticles.length === 0 && (
                           <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                            ⚠️ Keine aktuellen Artikel verfügbar - verwende Standard-Fragen
+                            ⚠️ {t('qa.no_current_articles')}
                           </div>
                         )}
                       </div>

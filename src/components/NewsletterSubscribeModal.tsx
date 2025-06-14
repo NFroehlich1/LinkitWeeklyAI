@@ -43,6 +43,11 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Form validation schema
+  const formSchema = z.object({
+    email: z.string().email(t('newsletter.email_invalid'))
+  });
+
   // Initialize form with validation
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

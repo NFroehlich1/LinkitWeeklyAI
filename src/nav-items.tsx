@@ -1,6 +1,6 @@
 import { Home, Mail, Database } from "lucide-react";
 
-export const navItems = [
+export const getNavItems = (t: (key: string) => string) => [
   {
     title: "Home",
     titleKey: "nav.home",

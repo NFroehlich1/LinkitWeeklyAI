@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -16,12 +15,24 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body for language preference
+    let config = {};
+    try {
+      config = await req.json();
+    } catch (e) {
+      // Default empty object if no body
+    }
+
+    const { language = 'de' } = config;
+    const isGerman = language === 'de';
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Missing Supabase configuration");
+      const errorMsg = isGerman ? "Fehlende Supabase-Konfiguration" : "Missing Supabase configuration";
+      throw new Error(errorMsg);
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -30,9 +41,9 @@ serve(async (req) => {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentWeek = getWeekNumber(now);
-    const dateRange = getWeekDateRange(currentWeek, currentYear);
+    const dateRange = getWeekDateRange(currentWeek, currentYear, language);
     
-    console.log(`Generating newsletter for week ${currentWeek}/${currentYear}`);
+    console.log(`Generating newsletter for week ${currentWeek}/${currentYear} in ${language.toUpperCase()}`);
 
     // Check if newsletter for this week already exists
     const { data: existingNewsletter } = await supabase
@@ -40,14 +51,20 @@ serve(async (req) => {
       .select('id')
       .eq('week_number', currentWeek)
       .eq('year', currentYear)
+      .eq('language', language)
       .single();
 
     if (existingNewsletter) {
-      console.log(`Newsletter for week ${currentWeek}/${currentYear} already exists`);
+      const weekLabel = isGerman ? 'KW' : 'Week';
+      const message = isGerman 
+        ? `Newsletter für ${weekLabel} ${currentWeek}/${currentYear} bereits vorhanden`
+        : `Newsletter for ${weekLabel} ${currentWeek}/${currentYear} already exists`;
+      
+      console.log(message);
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: `Newsletter für KW ${currentWeek}/${currentYear} bereits vorhanden`,
+          message,
           existing: true 
         }),
         {
@@ -58,10 +75,11 @@ serve(async (req) => {
     }
 
     // Generate realistic mock articles for students
-    const mockArticles = await generateStudentFocusedMockArticles(currentWeek, currentYear);
+    const mockArticles = await generateStudentFocusedMockArticles(currentWeek, currentYear, language);
     
     if (mockArticles.length === 0) {
-      throw new Error("Keine Artikel gefunden");
+      const errorMsg = isGerman ? "Keine Artikel gefunden" : "No articles found";
+      throw new Error(errorMsg);
     }
 
     console.log(`Generated ${mockArticles.length} student-focused articles for newsletter`);
@@ -71,12 +89,17 @@ serve(async (req) => {
       currentWeek,
       currentYear,
       dateRange,
-      mockArticles
+      mockArticles,
+      language
     );
 
     if (!newsletterContent) {
-      throw new Error("Newsletter-Generierung fehlgeschlagen");
+      const errorMsg = isGerman ? "Newsletter-Generierung fehlgeschlagen" : "Newsletter generation failed";
+      throw new Error(errorMsg);
     }
+
+    const weekLabel = isGerman ? 'KW' : 'Week';
+    const title = isGerman ? `LINKIT WEEKLY ${weekLabel} ${currentWeek}` : `LINKIT WEEKLY ${weekLabel} ${currentWeek}`;
 
     // Save to newsletter archive
     const { data: savedNewsletter, error: saveError } = await supabase
@@ -84,27 +107,34 @@ serve(async (req) => {
       .insert({
         week_number: currentWeek,
         year: currentYear,
-        title: `LINKIT WEEKLY KW ${currentWeek}`,
+        title: title,
         content: newsletterContent,
         html_content: convertMarkdownToHTML(newsletterContent),
         date_range: dateRange,
-        article_count: mockArticles.length
+        article_count: mockArticles.length,
+        language: language
       })
       .select()
       .single();
 
     if (saveError) {
-      throw new Error(`Fehler beim Speichern: ${saveError.message}`);
+      const errorMsg = isGerman ? `Fehler beim Speichern: ${saveError.message}` : `Save error: ${saveError.message}`;
+      throw new Error(errorMsg);
     }
 
     console.log(`✅ Newsletter successfully saved with ID: ${savedNewsletter.id}`);
 
+    const successMessage = isGerman 
+      ? `Newsletter für ${weekLabel} ${currentWeek}/${currentYear} erfolgreich generiert und gespeichert`
+      : `Newsletter for ${weekLabel} ${currentWeek}/${currentYear} successfully generated and saved`;
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Newsletter für KW ${currentWeek}/${currentYear} erfolgreich generiert und gespeichert`,
+        message: successMessage,
         newsletterId: savedNewsletter.id,
-        articleCount: mockArticles.length
+        articleCount: mockArticles.length,
+        language: language
       }),
       {
         status: 200,
@@ -114,10 +144,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("❌ Error in auto-generate-newsletter:", error);
+    const errorMsg = language === 'de' ? "Newsletter-Generierung fehlgeschlagen" : "Newsletter generation failed";
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: "Newsletter-Generierung fehlgeschlagen", 
+        error: errorMsg, 
         details: error.message 
       }),
       {
@@ -137,13 +168,14 @@ function getWeekNumber(date: Date): number {
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
-// Helper function to get week date range
-function getWeekDateRange(weekNumber: number, year: number): string {
+// Helper function to get week date range with language support
+function getWeekDateRange(weekNumber: number, year: number, language = 'de'): string {
   const startDate = getDateOfISOWeek(weekNumber, year);
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
   
-  const formatDate = (date: Date) => date.toLocaleDateString('de-DE', {
+  const locale = language === 'de' ? 'de-DE' : 'en-US';
+  const formatDate = (date: Date) => date.toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -166,232 +198,207 @@ function getDateOfISOWeek(week: number, year: number): Date {
 }
 
 // Generate student-focused mock articles with current AI trends for university students
-async function generateStudentFocusedMockArticles(weekNumber: number, year: number) {
-  // Erstelle realistische, studentenrelevante Artikel basierend auf aktuellen KI-Trends
-  const studentFocusedArticles = [
-    {
-      title: "PyTorch 2.3 bringt neue Features für studentische ML-Projekte",
-      description: "Die neueste PyTorch-Version führt vereinfachte APIs für Einsteiger ein und verbessert die Performance für typische Uni-Projekte. Besonders die neue DataLoader-Optimierung und erweiterte GPU-Unterstützung sind für Studierende interessant, die an Abschlussarbeiten arbeiten.",
-      link: "https://pytorch.org/blog/pytorch-2-3-release",
-      pubDate: new Date().toISOString(),
-      guid: `article-pytorch23-${Date.now()}`,
-      sourceName: "PyTorch Blog"
-    },
-    {
-      title: "Neue Kaggle Learn-Kurse zu Large Language Models kostenlos verfügbar",
-      description: "Kaggle erweitert sein kostenloses Lernangebot um praktische LLM-Kurse. Die Kurse decken Fine-Tuning, Prompt Engineering und RAG-Systeme ab - perfekt für Studierende, die ihre Skills erweitern wollen. Inklusive Hands-on Notebooks und Zertifikaten.",
-      link: "https://kaggle.com/learn/large-language-models",
-      pubDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      guid: `article-kaggle-llm-${Date.now()}`,
-      sourceName: "Kaggle"
-    },
-    {
-      title: "Stanford veröffentlicht neue CS229 Machine Learning Kursmaterialien",
-      description: "Die renommierte ML-Vorlesung von Stanford ist jetzt mit aktualisierten Inhalten zu Transformer-Architekturen und modernen Optimierungsverfahren verfügbar. Alle Lectures, Assignments und Lösungen sind frei zugänglich für Selbststudium.",
-      link: "https://cs229.stanford.edu/syllabus-spring2024.html",
-      pubDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      guid: `article-stanford-cs229-${Date.now()}`,
-      sourceName: "Stanford CS"
-    },
-    {
-      title: "GitHub Student Pack erweitert: Kostenloses GPT-4 für Studierende",
-      description: "Das GitHub Student Developer Pack bietet jetzt kostenlosen Zugang zu OpenAI GPT-4 für Bildungszwecke. Studierende erhalten monatlich Credits für API-Calls und Zugang zu neuen Modellen. Ideal für Prototyping und Forschungsprojekte an der Uni.",
-      link: "https://education.github.com/pack",
-      pubDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      guid: `article-github-student-gpt4-${Date.now()}`,
-      sourceName: "GitHub Education"
-    },
-    {
-      title: "Hugging Face launcht kostenlose Spaces für studentische KI-Demos",
-      description: "Studierende können jetzt kostenlos ihre ML-Modelle auf Hugging Face Spaces deployen. Die Plattform bietet Gradio-Integration, GPU-Zugang für Inferenz und einfaches Sharing von Projekten. Perfekt für Portfolio-Aufbau und Präsentationen.",
-      link: "https://huggingface.co/spaces",
-      pubDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      guid: `article-hf-spaces-students-${Date.now()}`,
-      sourceName: "Hugging Face"
-    },
-    {
-      title: "TUM startet neuen Master-Studiengang 'AI & Robotics' ab Wintersemester",
-      description: "Die TU München bietet ab dem kommenden Semester einen interdisziplinären Master an, der KI mit Robotik verbindet. Der Studiengang kombiniert theoretische Grundlagen mit praktischen Projekten bei Industriepartnern. Bewerbungen sind bis Ende Juli möglich.",
-      link: "https://tum.de/studium/studienangebot/ai-robotics",
-      pubDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      guid: `article-tum-ai-robotics-${Date.now()}`,
-      sourceName: "TU München"
-    },
-    {
-      title: "Neue Studie: KI-Skills werden zum wichtigsten Faktor bei Tech-Bewerbungen",
-      description: "Eine Befragung von 500 deutschen Tech-Unternehmen zeigt: 89% bevorzugen Bewerber mit nachweisbarer KI-Erfahrung. Besonders gefragt sind praktische Projekte mit ML-Frameworks und Verständnis für ethische KI-Entwicklung. Ein Weckruf für alle Studierenden.",
-      link: "https://tech-recruiting-report-2024.de",
-      pubDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-      guid: `article-ai-skills-jobs-${Date.now()}`,
-      sourceName: "Tech Recruiting Report"
-    }
-  ];
-
-  // Wähle 4-6 Artikel zufällig aus
-  const selectedCount = 4 + Math.floor(Math.random() * 3);
-  const shuffled = studentFocusedArticles.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, selectedCount);
+async function generateStudentFocusedMockArticles(weekNumber: number, year: number, language = 'de') {
+  const isGerman = language === 'de';
+  
+  if (isGerman) {
+    return [
+      {
+        title: "PyTorch 2.3 bringt neue Features für studentische ML-Projekte",
+        description: "Die neueste PyTorch-Version führt vereinfachte APIs für Einsteiger ein und verbessert die Performance für typische Uni-Projekte. Besonders die neue DataLoader-Optimierung und erweiterte GPU-Unterstützung sind für Studierende interessant, die an Abschlussarbeiten arbeiten.",
+        link: "https://pytorch.org/blog/pytorch-2-3-release",
+        pubDate: new Date().toISOString(),
+        guid: `article-pytorch23-${Date.now()}`,
+        sourceName: "PyTorch Blog"
+      },
+      {
+        title: "Neue Kaggle Learn-Kurse zu Large Language Models kostenlos verfügbar",
+        description: "Kaggle erweitert sein kostenloses Lernangebot um praktische LLM-Kurse. Die Kurse decken Fine-Tuning, Prompt Engineering und RAG-Systeme ab - perfekt für Studierende, die ihre Skills erweitern wollen. Inklusive Hands-on Notebooks und Zertifikaten.",
+        link: "https://kaggle.com/learn/large-language-models",
+        pubDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        guid: `article-kaggle-llm-${Date.now()}`,
+        sourceName: "Kaggle"
+      },
+      {
+        title: "Stanford veröffentlicht neue CS229 Machine Learning Kursmaterialien",
+        description: "Die renommierte ML-Vorlesung von Stanford ist jetzt mit aktualisierten Inhalten zu Transformer-Architekturen und modernen Optimierungsverfahren verfügbar. Alle Lectures, Assignments und Lösungen sind frei zugänglich für Selbststudium.",
+        link: "https://cs229.stanford.edu/syllabus-spring2024.html",
+        pubDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        guid: `article-stanford-cs229-${Date.now()}`,
+        sourceName: "Stanford CS"
+      },
+      {
+        title: "GitHub Student Pack erweitert: Kostenloses GPT-4 für Studierende",
+        description: "Das GitHub Student Developer Pack bietet jetzt kostenlosen Zugang zu OpenAI GPT-4 für Bildungszwecke. Studierende erhalten monatlich Credits für API-Calls und Zugang zu neuen Modellen. Ideal für Prototyping und Forschungsprojekte an der Uni.",
+        link: "https://education.github.com/pack",
+        pubDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        guid: `article-github-student-${Date.now()}`,
+        sourceName: "GitHub Education"
+      }
+    ];
+  } else {
+    return [
+      {
+        title: "PyTorch 2.3 introduces new features for student ML projects",
+        description: "The latest PyTorch version introduces simplified APIs for beginners and improves performance for typical university projects. The new DataLoader optimization and extended GPU support are particularly interesting for students working on thesis projects.",
+        link: "https://pytorch.org/blog/pytorch-2-3-release",
+        pubDate: new Date().toISOString(),
+        guid: `article-pytorch23-${Date.now()}`,
+        sourceName: "PyTorch Blog"
+      },
+      {
+        title: "New Kaggle Learn courses on Large Language Models available for free",
+        description: "Kaggle expands its free learning offerings with practical LLM courses. The courses cover fine-tuning, prompt engineering, and RAG systems - perfect for students looking to expand their skills. Includes hands-on notebooks and certificates.",
+        link: "https://kaggle.com/learn/large-language-models",
+        pubDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        guid: `article-kaggle-llm-${Date.now()}`,
+        sourceName: "Kaggle"
+      },
+      {
+        title: "Stanford releases new CS229 Machine Learning course materials",
+        description: "The renowned ML lecture from Stanford is now available with updated content on Transformer architectures and modern optimization methods. All lectures, assignments and solutions are freely accessible for self-study.",
+        link: "https://cs229.stanford.edu/syllabus-spring2024.html",
+        pubDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        guid: `article-stanford-cs229-${Date.now()}`,
+        sourceName: "Stanford CS"
+      },
+      {
+        title: "GitHub Student Pack expanded: Free GPT-4 for students",
+        description: "The GitHub Student Developer Pack now offers free access to OpenAI GPT-4 for educational purposes. Students receive monthly credits for API calls and access to new models. Ideal for prototyping and research projects at university.",
+        link: "https://education.github.com/pack",
+        pubDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        guid: `article-github-student-${Date.now()}`,
+        sourceName: "GitHub Education"
+      }
+    ];
+  }
 }
 
-// Generate newsletter content with strong student focus using Gemini AI
+// Generate student newsletter content with language support
 async function generateStudentNewsletterContent(
   weekNumber: number, 
   year: number, 
   dateRange: string, 
-  articles: any[]
+  articles: any[],
+  language = 'de'
 ): Promise<string> {
-  console.log("Generating student-focused newsletter content with Gemini AI...");
-  
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  
-  // Erstelle detaillierte Artikel-Informationen für den studentenorientierten Prompt
-  const articleDetails = articles.map((article, index) => `
-**ARTIKEL ${index + 1}:**
-Titel: "${article.title}"
-Beschreibung: "${article.description}"
-Quelle: ${article.sourceName}
-Datum: ${article.pubDate}
-Link: ${article.link}
-`).join('\n');
-
-  const prompt = `Du schreibst als Student für Studenten den Newsletter "LINKIT WEEKLY" - für eine HOCHSCHULGRUPPE zu KI, Data Science und Machine Learning. 
-
-**ZIELGRUPPE:** Studierende der Informatik, Data Science, Mathematik und verwandter Fächer, die sich für praktische KI-Anwendungen interessieren und ihre Karriere vorbereiten.
-
-**STRENGE REGELN FÜR FAKTISCHE GENAUIGKEIT:**
-- Verwende AUSSCHLIESSLICH Informationen aus den bereitgestellten Artikeln
-- ERFINDE NIEMALS Bezüge zu spezifischen Universitätskursen oder Professoren
-- ERFINDE NIEMALS technische Details, die nicht in den Artikeln stehen
-- Wenn du Verbindungen zu Studieninhalten herstellst, bleibe allgemein ("in ML-Kursen", "bei Data Science Projekten")
-- Nutze KEINE spezifischen Kursnamen, außer sie werden explizit in den Artikeln erwähnt
-
-**STIL & TON (natürlich und studentenfreundlich):**
-- Beginne mit natürlichen, lockeren Begrüßungen wie "Hi!", "Was geht ab!", "Servus zusammen!", "Hey Leute!" oder einfach "Hey"
-- VERMEIDE KOMPLETT formelle Begrüßungen wie "Herzlichen Glückwunsch", "Willkommen zu unserem Newsletter" oder steife Formulierungen
-- Vermeide Business-Sprache oder übertriebene Förmlichkeit
-- Direkt und persönlich ("ihr", "euch"), aber authentisch und entspannt
-- Praktischer Fokus auf Studium und Berufseinstieg
-- Enthusiastisch aber wissenschaftlich fundiert - wie ein Student, der anderen Studenten schreibt
-- Tools und Technologien nur erwähnen, wenn sie in den Artikeln vorkommen
-
-**STRUKTUR für KW ${weekNumber}/${year} (${dateRange}):**
-
-# 📬 LINKIT WEEKLY KW ${weekNumber}
-**Dein Update zu KI, Data Science und Industrie 4.0**
-
-KW ${weekNumber} · ${dateRange}
-
-**Intro**: Natürliche, lockere Begrüßung der LINKIT-Community (KEINE formellen Glückwünsche oder steife Willkommensnachrichten!)
-
-**Hauptteil - Detaillierte Artikel-Analysen (NUR basierend auf echten Inhalten):**
-[Für jeden Artikel:]
-- **Aussagekräftige Headline** mit Kern-Message
-- 2-3 Absätze ausführliche Analyse der TATSÄCHLICHEN Inhalte
-- **Warum das für euch relevant ist:** Konkrete Bedeutung für Studierende
-- Allgemeine Bezüge zu Studieninhalten (OHNE spezifische Kursnamen, außer erwähnt)
-- Praktische Anwendung in eigenen Projekten
-- 👉 **Details hier** [Link]
-
-**Abschluss:**
-- Zusammenfassung der Key Takeaways
-- Lockerer Abschluss mit Community-Aufruf
-
-**KRITISCHE ANFORDERUNGEN:**
-- Verwende die EXAKTEN Details aus den bereitgestellten Artikeln
-- Erkläre KI-Konzepte verständlich für Studierende
-- Mindestens 1500-2000 Wörter mit substantieller Analyse pro Artikel
-- Authentischer, lockerer studentischer Ton ohne Förmlichkeiten oder formelle Begrüßungen
-- Fokus auf praktische Umsetzbarkeit und Karriererelevanz
-
-ARTIKEL FÜR DIESE WOCHE:
-${articleDetails}
-
-WICHTIG: Bleibe strikt bei den Inhalten der bereitgestellten Artikel. Erfinde keine Details, Kurse oder technischen Zusammenhänge, die nicht explizit erwähnt werden! Verwende eine natürliche, studentische Begrüßung OHNE jegliche formelle Glückwünsche oder steife Willkommensnachrichten!`;
-
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/gemini-ai`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`
-      },
-      body: JSON.stringify({ 
-        action: 'generate-summary',
-        data: {
-          digest: { weekNumber, year, dateRange, items: articles },
-          selectedArticles: articles
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini AI call failed: ${response.status}`);
+    // Use Gemini AI to generate newsletter content
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    
+    if (!geminiApiKey) {
+      console.warn('GEMINI_API_KEY not found, using fallback content');
+      return generateStudentFallbackContent(weekNumber, year, dateRange, articles, language);
     }
 
-    const data = await response.json();
-    return data.content || generateStudentFallbackContent(weekNumber, year, dateRange, articles);
+    // Call gemini-ai function with language parameter
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase configuration for Gemini call");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const digest = {
+      weekNumber,
+      year,
+      dateRange,
+      items: articles
+    };
+
+    const response = await supabase.functions.invoke('gemini-ai', {
+      body: {
+        action: 'generate-summary',
+        data: {
+          digest,
+          selectedArticles: articles,
+          language: language
+        }
+      }
+    });
+
+    if (response.error) {
+      throw new Error(`Gemini AI error: ${response.error}`);
+    }
+
+    const result = response.data;
+    
+    if (result.summary) {
+      return result.summary;
+    } else {
+      throw new Error('No summary returned from Gemini AI');
+    }
+
   } catch (error) {
-    console.error("Error calling Gemini AI:", error);
-    return generateStudentFallbackContent(weekNumber, year, dateRange, articles);
+    console.error('Error generating newsletter with AI:', error);
+    console.log('Falling back to static content');
+    return generateStudentFallbackContent(weekNumber, year, dateRange, articles, language);
   }
 }
 
-// Student-focused fallback content generation
+// Generate fallback content with language support
 function generateStudentFallbackContent(
   weekNumber: number, 
   year: number, 
   dateRange: string, 
-  articles: any[]
+  articles: any[],
+  language = 'de'
 ): string {
-  const articleAnalyses = articles.map((article, index) => `### ${article.title}
+  const isGerman = language === 'de';
+  const weekLabel = isGerman ? 'KW' : 'Week';
+  
+  const greeting = isGerman ? 'Hey Leute!' : 'Hey everyone!';
+  const intro = isGerman 
+    ? `Willkommen zur ${weekLabel} ${weekNumber}! Hier sind die wichtigsten KI-News für euch zusammengefasst:`
+    : `Welcome to ${weekLabel} ${weekNumber}! Here are the most important AI news summarized for you:`;
+  
+  const articleSections = articles.map((article, index) => {
+    const articleLabel = isGerman ? 'Artikel' : 'Article';
+    const readMore = isGerman ? 'Mehr dazu' : 'Read more';
+    
+    return `## ${articleLabel} ${index + 1}: ${article.title}
 
 ${article.description}
 
-**Warum das für euch relevant ist:** ${article.title.includes('PyTorch') ? 'Für alle, die gerade ihre ersten ML-Projekte umsetzen - die neuen Features machen den Einstieg noch einfacher!' : article.title.includes('Kaggle') ? 'Perfekte Gelegenheit, eure Skills zu erweitern und gleichzeitig Zertifikate für den Lebenslauf zu sammeln!' : article.title.includes('GitHub') ? 'Kostenloses GPT-4 für eure Uni-Projekte - meldet euch schnell an!' : article.title.includes('Master') ? 'Interessante Perspektive für alle, die über eine Spezialisierung in Richtung KI nachdenken.' : 'Diese Entwicklung zeigt wichtige Trends für eure zukünftige Karriere.'}
+👉 **${readMore}:** [Link zum ${articleLabel}](${article.link})`;
+  }).join('\n\n');
 
-**Quelle:** ${article.sourceName}  
-👉 **Details hier** [${article.link}](${article.link})
-`).join('\n\n');
+  const closing = isGerman 
+    ? `Das war's für diese Woche! Bleibt neugierig und experimentiert weiter mit KI.
 
-  return `# 📬 LINKIT WEEKLY KW ${weekNumber}
+Euer LINKIT Team 🚀`
+    : `That's it for this week! Stay curious and keep experimenting with AI.
 
-**Dein Update zu KI, Data Science und Industrie 4.0**
+Your LINKIT Team 🚀`;
 
-KW ${weekNumber} · ${dateRange}
+  return `# 📬 LINKIT WEEKLY ${weekLabel} ${weekNumber}
+**${isGerman ? 'Dein Update zu KI, Data Science und Industrie 4.0' : 'Your update on AI, Data Science and Industry 4.0'}**
 
-Hey zusammen!
+${weekLabel} ${weekNumber} · ${dateRange}
 
-Diese Woche war wieder gepacked mit spannenden Entwicklungen, die direkt für euer Studium und eure Zukunft relevant sind. Von neuen Tools bis hin zu Karrierechancen - hier sind alle wichtigen Updates der Woche.
+${greeting}
 
-${articleAnalyses}
+${intro}
 
-## Was bedeutet das für euch?
-
-Diese Woche zeigt wieder, wie dynamisch unser Fachbereich ist. Besonders die kostenlosen Angebote für Studierende sind eine riesige Chance - nutzt sie! Für alle, die gerade an Projekten oder Abschlussarbeiten arbeiten: Die neuen Tools und Ressourcen können euch direkt weiterhelfen.
-
-**Key Takeaways:**
-- Haltet euch über neue kostenlose Ressourcen auf dem Laufenden
-- Experimentiert mit den neuen Tools in euren Projekten  
-- Vernetzt euch mit der Community und tauscht Erfahrungen aus
-- Denkt schon jetzt an euren Berufseinstieg und relevante Skills
-
-Bis nächste Woche und happy coding! 🚀
+${articleSections}
 
 ---
 
-**LINKIT - Data Science & Machine Learning** | Hochschulgruppe für KI-Enthusiasten
-Folgt uns für mehr Updates und Community-Events!
-`;
+${closing}`;
 }
 
-// Convert markdown to HTML (basic conversion)
+// Convert markdown to HTML (basic implementation)
 function convertMarkdownToHTML(markdown: string): string {
   return markdown
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*)\*/gim, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2">$1</a>')
-    .replace(/\n/gim, '<br>');
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*)\*/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\n/g, '<br>')
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
 }

@@ -192,7 +192,7 @@ const Index = () => {
           year: currentYear,
           dateRange: getWeekDateRange(currentWeek, currentYear),
           title: `KW ${currentWeek}/${currentYear}`,
-          summary: "Noch keine Zusammenfassung erstellt",
+          summary: t('status.no_summary_created'),
           items: combinedItems,
           generatedContent: null,
           createdAt: new Date()

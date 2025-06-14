@@ -76,7 +76,7 @@ const NewsletterManagement = () => {
       }
     } catch (error) {
       console.error("Fehler beim Laden der archivierten Newsletter:", error);
-      toast.error("Newsletter-Archiv konnte nicht geladen werden.");
+      toast.error(t('management.loading_archive_error'));
     } finally {
       setIsLoadingArchive(false);
     }
@@ -104,7 +104,7 @@ const NewsletterManagement = () => {
       setSubscriberCount(count);
     } catch (error) {
       console.error("Fehler beim Laden der Abonnenten:", error);
-      toast.error("Abonnenten konnten nicht geladen werden.");
+      toast.error(t('management.loading_subscribers_error'));
     } finally {
       setIsLoadingSubscribers(false);
     }
@@ -122,7 +122,7 @@ const NewsletterManagement = () => {
 
   const handleSendNewsletter = async () => {
     if (!newsletterContent) {
-      toast.error("Bitte wählen Sie einen Newsletter-Inhalt aus dem Archiv aus.");
+      toast.error(t('management.select_newsletter'));
       return;
     }
 
@@ -147,13 +147,13 @@ const NewsletterManagement = () => {
       const data = response.data;
       
       if (data.success) {
-        toast.success(`Newsletter wurde an ${data.emailsSent} Abonnenten verarbeitet!`);
+        toast.success(`${t('management.newsletter_sent')} ${data.emailsSent} ${t('management.subscribers_processed')}`);
       } else {
-        throw new Error(data.message || "Unbekannter Fehler");
+        throw new Error(data.message || t('management.unknown_error'));
       }
     } catch (error: any) {
       console.error("Fehler beim Versenden des Newsletters:", error);
-      toast.error("Newsletter konnte nicht versendet werden: " + (error.message || "Unbekannter Fehler"));
+      toast.error(t('management.send_error') + " " + (error.message || t('management.unknown_error')));
     } finally {
       setIsSending(false);
     }

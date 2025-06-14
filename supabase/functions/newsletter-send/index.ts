@@ -1,4 +1,3 @@
-
 // Edge function for newsletter sending with Supabase
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -6,6 +5,37 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Language-specific default values
+const getLanguageDefaults = (language = 'de') => {
+  const isGerman = language === 'de';
+  
+  return {
+    defaultSubject: isGerman 
+      ? `KI-Newsletter vom ${new Date().toLocaleDateString('de-DE')}` 
+      : `AI Newsletter from ${new Date().toLocaleDateString('en-US')}`,
+    defaultSenderName: isGerman ? "KI-Newsletter" : "AI Newsletter",
+    welcomeMessage: isGerman 
+      ? "Willkommen zu unserem wöchentlichen KI-Newsletter." 
+      : "Welcome to our weekly AI newsletter.",
+    newsIntro: isGerman 
+      ? "Hier sind die wichtigsten Neuigkeiten aus der Welt der Künstlichen Intelligenz:" 
+      : "Here are the most important news from the world of Artificial Intelligence:",
+    unsubscribeText: isGerman 
+      ? "Sie erhalten diesen Newsletter, weil Sie sich dafür angemeldet haben." 
+      : "You are receiving this newsletter because you subscribed to it.",
+    unsubscribeLink: isGerman ? "Hier abmelden" : "Unsubscribe here",
+    mockNews: isGerman ? [
+      "GPT-5 soll in den nächsten Monaten erscheinen",
+      "Google stellt neue KI-Funktionen für Workspace vor", 
+      "EU einigt sich auf KI-Regulierung"
+    ] : [
+      "GPT-5 expected to be released in the coming months",
+      "Google introduces new AI features for Workspace",
+      "EU agrees on AI regulation"
+    ]
+  };
 };
 
 serve(async (req) => {
@@ -24,19 +54,25 @@ serve(async (req) => {
     }
 
     const {
-      subject = `KI-Newsletter vom ${new Date().toLocaleDateString('de-DE')}`,
+      subject,
       customContent = null,
-      senderName = "KI-Newsletter",
-      senderEmail = "froehlich.nico@outlook.de" // Updated sender email
+      senderName,
+      senderEmail = "froehlich.nico@outlook.de",
+      language = 'de'
     } = newsletterConfig;
+
+    const langDefaults = getLanguageDefaults(language);
+    const finalSubject = subject || langDefaults.defaultSubject;
+    const finalSenderName = senderName || langDefaults.defaultSenderName;
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://aggkhetcdjmggqjzelgd.supabase.co";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!supabaseServiceKey) {
+      const errorMsg = language === 'de' ? "Server Konfigurationsfehler" : "Server configuration error";
       return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
+        JSON.stringify({ error: errorMsg }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -54,8 +90,9 @@ serve(async (req) => {
 
     if (subscribersError) {
       console.error("Error fetching subscribers:", subscribersError);
+      const errorMsg = language === 'de' ? "Fehler beim Laden der Abonnenten" : "Failed to fetch subscribers";
       return new Response(
-        JSON.stringify({ error: "Failed to fetch subscribers" }),
+        JSON.stringify({ error: errorMsg }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -64,8 +101,9 @@ serve(async (req) => {
     }
 
     if (!subscribers || subscribers.length === 0) {
+      const message = language === 'de' ? "Keine bestätigten Abonnenten gefunden" : "No confirmed subscribers found";
       return new Response(
-        JSON.stringify({ message: "No confirmed subscribers found" }),
+        JSON.stringify({ message }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -76,21 +114,21 @@ serve(async (req) => {
     // Default HTML content for the newsletter
     let htmlContent = customContent;
     
-    // If no custom content is provided, use default template
+    // If no custom content is provided, use language-specific default template
     if (!htmlContent) {
+      const mockNewsList = langDefaults.mockNews.map(item => `<li>${item}</li>`).join('\n            ');
+      
       htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">${senderName}</h1>
-          <p>Willkommen zu unserem wöchentlichen KI-Newsletter.</p>
-          <p>Hier sind die wichtigsten Neuigkeiten aus der Welt der Künstlichen Intelligenz:</p>
+          <h1 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">${finalSenderName}</h1>
+          <p>${langDefaults.welcomeMessage}</p>
+          <p>${langDefaults.newsIntro}</p>
           <ul>
-            <li>GPT-5 soll in den nächsten Monaten erscheinen</li>
-            <li>Google stellt neue KI-Funktionen für Workspace vor</li>
-            <li>EU einigt sich auf KI-Regulierung</li>
+            ${mockNewsList}
           </ul>
           <p style="margin-top: 30px; font-size: 14px; color: #777;">
-            Sie erhalten diesen Newsletter, weil Sie sich dafür angemeldet haben. 
-            <a href="{{{unsubscribe}}}" style="color: #777;">Hier abmelden</a>
+            ${langDefaults.unsubscribeText}
+            <a href="{{{unsubscribe}}}" style="color: #777;">${langDefaults.unsubscribeLink}</a>
           </p>
         </div>
       `;
@@ -110,17 +148,18 @@ serve(async (req) => {
         
         // Log the email sending attempt for debugging
         console.log(`Sending newsletter to: ${subscriber.email}`);
-        console.log(`Subject: ${subject}`);
-        console.log(`From: ${senderName} <${senderEmail}>`);
+        console.log(`Subject: ${finalSubject}`);
+        console.log(`From: ${finalSenderName} <${senderEmail}>`);
         
         // Call the newsletter-send-email function to send email
         const emailResponse = await supabase.functions.invoke('newsletter-send-email', {
           body: {
             to: subscriber.email,
-            subject: subject,
+            subject: finalSubject,
             html: personalizedContent,
-            senderName: senderName,
-            senderEmail: senderEmail
+            senderName: finalSenderName,
+            senderEmail: senderEmail,
+            language: language
           }
         });
         
@@ -147,12 +186,13 @@ serve(async (req) => {
       const { error: insertError } = await supabase
         .from('newsletters')
         .insert({
-          subject: subject,
+          subject: finalSubject,
           content: htmlContent,
-          sender_name: senderName,
+          sender_name: finalSenderName,
           sender_email: senderEmail,
           sent_at: new Date().toISOString(),
-          recipients_count: subscribers.length
+          recipients_count: subscribers.length,
+          language: language
         });
         
       if (insertError) {
@@ -162,14 +202,19 @@ serve(async (req) => {
       console.error("Error storing newsletter:", error);
     }
 
+    const responseMessage = language === 'de' 
+      ? `Newsletter an ${successfulSends.length} Abonnenten gesendet`
+      : `Newsletter sent to ${successfulSends.length} subscribers`;
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Newsletter sent to ${successfulSends.length} subscribers`,
+        message: responseMessage,
         emailsSent: successfulSends.length,
         totalSubscribers: subscribers.length,
         successfulSends,
-        failedSends
+        failedSends,
+        language
       }),
       {
         status: 200,
@@ -178,8 +223,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Server error:", error);
+    const errorMsg = language === 'de' ? "Interner Serverfehler" : "Internal server error";
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: error.message }),
+      JSON.stringify({ error: errorMsg, details: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
