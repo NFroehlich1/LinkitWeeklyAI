@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { RssItem } from "@/types/newsTypes";
-import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb, ExternalLink, Volume2, VolumeX } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb, ExternalLink, Volume2, VolumeX, Globe, Search, Zap, Brain } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from 'react-markdown';
 import VoiceInput from './VoiceInput';
 import ElevenLabsTTS from './ElevenLabsTTS';
+import { WebSearchService } from '@/services/WebSearchService';
 
 interface NewsletterAskAboutProps {
   articles: RssItem[];
@@ -22,7 +23,11 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  searchQueries?: string[];
+  searchPerformed?: boolean;
 }
+
+type WebSearchMode = 'force_on' | 'auto' | 'force_off';
 
 const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemini' }: NewsletterAskAboutProps) => {
   const [question, setQuestion] = useState("");
@@ -31,6 +36,8 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
   const [dynamicQuestions, setDynamicQuestions] = useState<string[]>([]);
   const [autoSpeechEnabled, setAutoSpeechEnabled] = useState(false);
   const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
+  const [webSearchMode, setWebSearchMode] = useState<WebSearchMode>('auto');
+  const [webSearchService, setWebSearchService] = useState<WebSearchService | null>(null);
 
   useEffect(() => {
     generateDynamicQuestions();
@@ -51,6 +58,13 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
       // The ElevenLabsTTS component will handle the actual speech
     }
   }, [chatHistory, autoSpeechEnabled, lastReadMessageId]);
+
+  // Initialize WebSearchService when model changes
+  useEffect(() => {
+    if (selectedModel) {
+      setWebSearchService(new WebSearchService(selectedModel));
+    }
+  }, [selectedModel]);
 
   const generateDynamicQuestions = () => {
     console.log("🔄 Generating new dynamic questions...");
@@ -144,6 +158,16 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
         "Welche Geschäftsmodelle entstehen?",
         "Was bedeuten diese Trends für die Zukunft?"
       ],
+      webSearch: [
+        "Was sind die neuesten KI-Entwicklungen heute?",
+        "Welche aktuellen Tech-News sollte ich kennen?",
+        "Was passiert gerade in der KI-Welt?",
+        "Gibt es neue Durchbrüche in der KI-Forschung?",
+        "Welche KI-Startups sind gerade im Trend?",
+        "Was sind die aktuellsten Machine Learning Trends?",
+        "Welche neuen AI-Tools wurden kürzlich veröffentlicht?",
+        "Was berichten Tech-Medien heute über KI?"
+      ],
       newsletter: [
         "Was sind die Kernaussagen dieses Newsletters?",
         "Welche Artikel werden besonders hervorgehoben?",
@@ -193,8 +217,14 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
     }
 
     // Always add some general questions (randomly selected)
-    const generalQuestions = [...questionTemplates.general].sort(() => 0.5 - Math.random()).slice(0, 3);
+    const generalQuestions = [...questionTemplates.general].sort(() => 0.5 - Math.random()).slice(0, 2);
     questions.push(...generalQuestions);
+
+    // Add web search questions if mode supports it
+    if (webSearchMode !== 'force_off') {
+      const webSearchQuestions = [...questionTemplates.webSearch].sort(() => 0.5 - Math.random()).slice(0, 2);
+      questions.push(...webSearchQuestions);
+    }
 
     // Shuffle and limit to 6 questions
     const finalQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, 6);
@@ -233,108 +263,255 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
     try {
       console.log("Asking question about newsletter articles:", question);
       console.log("Using AI provider:", selectedModel);
+      console.log("Web search mode:", webSearchMode);
       console.log("Articles available:", articles.length);
       console.log("Newsletter content available:", !!newsletterContent);
       
-      // Prepare context from articles and newsletter
-      const articlesContext = articles.map(article => ({
-        title: article.title,
-        description: article.description || '',
-        sourceName: article.sourceName,
-        pubDate: article.pubDate,
-        link: article.link,
-        content: article.content || article.description || ''
-      }));
-
-      console.log("Prepared articles context:", articlesContext.length);
-
-      // Create enhanced prompt that includes newsletter content
-      let contextualPrompt = `Beantworte die folgende Frage basierend auf dem kompletten Newsletter-Inhalt und den zugehörigen Artikeln: "${question}"\n\n`;
+      let answer = '';
+      let searchQueries: string[] = [];
+      let searchPerformed = false;
       
-      if (newsletterContent) {
-        contextualPrompt += `NEWSLETTER-INHALT:\n${newsletterContent}\n\n`;
-        contextualPrompt += `Zusätzlich sind hier die ursprünglichen Artikel, auf denen der Newsletter basiert:\n\n`;
-      } else {
-        contextualPrompt += `Basiere deine Antwort auf den folgenden Artikeln:\n\n`;
-      }
+      // Determine if we should use web search based on mode
+      const shouldUseWebSearch = webSearchMode === 'force_on' || 
+                                (webSearchMode === 'auto' && webSearchService);
       
-      contextualPrompt += `ARTIKEL-DETAILS:\n`;
-      articlesContext.forEach((article, index) => {
-        contextualPrompt += `Artikel ${index + 1}: ${article.title}\n`;
-        contextualPrompt += `   Quelle: ${article.sourceName}\n`;
-        contextualPrompt += `   Link: ${article.link}\n`;
-        contextualPrompt += `   Beschreibung: ${article.description}\n`;
-        if (article.content && article.content !== article.description) {
-          contextualPrompt += `   Inhalt: ${article.content.substring(0, 300)}...\n`;
+      if (shouldUseWebSearch && webSearchService) {
+        // Use the new WebSearchService for web search integration
+        console.log("🌐 Using WebSearchService for enhanced Q&A...");
+        
+        // Prepare context from articles and newsletter
+        const articlesContext = articles.map(article => ({
+          title: article.title,
+          description: article.description || '',
+          sourceName: article.sourceName,
+          pubDate: article.pubDate,
+          link: article.link,
+          content: article.content || article.description || ''
+        }));
+
+        let contextualPrompt = '';
+        if (newsletterContent) {
+          contextualPrompt += `NEWSLETTER-INHALT:\n${newsletterContent}\n\n`;
+          contextualPrompt += `Zusätzlich sind hier die ursprünglichen Artikel, auf denen der Newsletter basiert:\n\n`;
+        } else {
+          contextualPrompt += `Basiere deine Antwort auf den folgenden Artikeln:\n\n`;
         }
-        contextualPrompt += `\n`;
-      });
-      
-      contextualPrompt += `\nGib eine detaillierte, hilfreiche Antwort auf Deutsch. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'} 
+        
+        contextualPrompt += `ARTIKEL-DETAILS:\n`;
+        articlesContext.forEach((article, index) => {
+          contextualPrompt += `Artikel ${index + 1}: ${article.title}\n`;
+          contextualPrompt += `   Quelle: ${article.sourceName}\n`;
+          contextualPrompt += `   Link: ${article.link}\n`;
+          contextualPrompt += `   Beschreibung: ${article.description}\n`;
+          if (article.content && article.content !== article.description) {
+            contextualPrompt += `   Inhalt: ${article.content.substring(0, 300)}...\n`;
+          }
+          contextualPrompt += `\n`;
+        });
+
+        if (webSearchMode === 'force_on') {
+          // Force web search - modify the WebSearchService to always search
+          console.log("🔥 Forcing web search...");
+          const analysis = await webSearchService.analyzeQuestion(question, contextualPrompt);
+          const queries = analysis.queries.length > 0 ? analysis.queries : [question];
+          
+          try {
+            const searchResults = await webSearchService.performSearch(queries);
+            const result = await webSearchService.generateAnswerWithSearch(question, contextualPrompt, searchResults || undefined);
+            
+            answer = result.content;
+            searchQueries = queries;
+            searchPerformed = true;
+            
+            toast.success("Web-Suche wurde erzwungen und durchgeführt!");
+          } catch (searchError) {
+            console.error("🚨 Web search failed:", searchError);
+            
+            // Check if it's a deployment issue
+            if (searchError.message?.includes('Web search service not available')) {
+              toast.error("Web-Suche nicht verfügbar: ACI Brave Search Funktion muss in Supabase deployed werden");
+              
+              // Fall back to regular Q&A without web search using the standard action
+              console.log("📝 Falling back to regular Q&A without web search...");
+              
+              // Use qa-with-newsletter action for standard Q&A functionality
+              const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+              const { data, error } = await supabase.functions.invoke(functionName, {
+                body: { 
+                  action: 'qa-with-newsletter',
+                  data: { 
+                    question: question,
+                    newsletter: contextualPrompt
+                  }
+                }
+              });
+
+              if (error || !data?.content) {
+                throw new Error("Fehler beim Generieren der Antwort: " + (error?.message || 'Keine Antwort erhalten'));
+              }
+
+              answer = data.content;
+              searchQueries = [];
+              searchPerformed = false;
+              
+              toast.info("Antwort ohne Web-Suche generiert");
+            } else {
+              throw searchError; // Re-throw other errors
+            }
+          }
+        } else {
+          // Auto mode - let AI decide
+          try {
+            const result = await webSearchService.askWithSearch(question, contextualPrompt);
+            answer = result.content;
+            searchQueries = result.searchQueries;
+            searchPerformed = result.searchPerformed;
+            
+            if (result.searchPerformed) {
+              console.log("✅ AI decided web search was helpful");
+              toast.success("KI hat Web-Suche als hilfreich eingestuft!");
+            } else {
+              console.log("ℹ️ AI decided existing context was sufficient");
+              toast.info("KI hat entschieden: Vorhandener Kontext ist ausreichend");
+            }
+                     } catch (searchError) {
+             console.error("🚨 Auto web search failed:", searchError);
+             
+             // Check if it's a deployment issue
+             if (searchError.message?.includes('Web search service not available')) {
+               toast.warning("Web-Suche nicht verfügbar - verwende nur Newsletter-Kontext");
+               
+               // Fall back to regular Q&A without web search using the standard action
+               console.log("📝 Falling back to regular Q&A without web search...");
+               
+               // Use qa-with-newsletter action for standard Q&A functionality
+               const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+               const { data, error } = await supabase.functions.invoke(functionName, {
+                 body: { 
+                   action: 'qa-with-newsletter',
+                   data: { 
+                     question: question,
+                     newsletter: contextualPrompt
+                   }
+                 }
+               });
+
+               if (error || !data?.content) {
+                 throw new Error("Fehler beim Generieren der Antwort: " + (error?.message || 'Keine Antwort erhalten'));
+               }
+
+               answer = data.content;
+               searchQueries = [];
+               searchPerformed = false;
+             } else {
+               throw searchError; // Re-throw other errors
+             }
+           }
+        }
+      } else if (webSearchMode === 'force_off') {
+        // Force no web search
+        console.log("🚫 Web search disabled - using standard Q&A...");
+        toast.info("Web-Suche deaktiviert - verwende nur vorhandenen Kontext");
+        
+        // Use existing Q&A without web search
+        const articlesContext = articles.map(article => ({
+          title: article.title,
+          description: article.description || '',
+          sourceName: article.sourceName,
+          pubDate: article.pubDate,
+          link: article.link,
+          content: article.content || article.description || ''
+        }));
+
+        console.log("Prepared articles context:", articlesContext.length);
+
+        // Create enhanced prompt that includes newsletter content
+        let contextualPrompt = `Beantworte die folgende Frage basierend auf dem kompletten Newsletter-Inhalt und den zugehörigen Artikeln: "${question}"\n\n`;
+        
+        if (newsletterContent) {
+          contextualPrompt += `NEWSLETTER-INHALT:\n${newsletterContent}\n\n`;
+          contextualPrompt += `Zusätzlich sind hier die ursprünglichen Artikel, auf denen der Newsletter basiert:\n\n`;
+        } else {
+          contextualPrompt += `Basiere deine Antwort auf den folgenden Artikeln:\n\n`;
+        }
+        
+        contextualPrompt += `ARTIKEL-DETAILS:\n`;
+        articlesContext.forEach((article, index) => {
+          contextualPrompt += `Artikel ${index + 1}: ${article.title}\n`;
+          contextualPrompt += `   Quelle: ${article.sourceName}\n`;
+          contextualPrompt += `   Link: ${article.link}\n`;
+          contextualPrompt += `   Beschreibung: ${article.description}\n`;
+          if (article.content && article.content !== article.description) {
+            contextualPrompt += `   Inhalt: ${article.content.substring(0, 300)}...\n`;
+          }
+          contextualPrompt += `\n`;
+        });
+        
+        contextualPrompt += `\nGib eine detaillierte, hilfreiche Antwort auf Deutsch. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'} 
 
 WICHTIG: Wenn du auf spezifische Artikel verweist, verwende IMMER das Format "Artikel X" (z.B. "Artikel 1", "Artikel 2"), damit diese automatisch zu klickbaren Links werden. Beispiel: "Wie in Artikel 3 beschrieben..." oder "Artikel 1 und Artikel 5 zeigen...".
 
 Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
-      // Use qa-with-newsletter action for proper Q&A functionality
-      const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { 
-          action: 'qa-with-newsletter',
-          data: { 
-            question: question,
-            newsletter: newsletterContent || contextualPrompt
+        // Use qa-with-newsletter action for standard Q&A functionality
+        const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+        const { data, error } = await supabase.functions.invoke(functionName, {
+          body: { 
+            action: 'qa-with-newsletter',
+            data: { 
+              question: question,
+              newsletter: newsletterContent || contextualPrompt
+            }
           }
+        });
+
+        console.log("Supabase function response:", { data, error });
+
+        if (error) {
+          console.error("Supabase function error:", error);
+          toast.error("Fehler bei der Verbindung zum KI-Service");
+          return;
         }
-      });
 
-      console.log("Supabase function response:", { data, error });
+        if (data?.error) {
+          console.error(`${selectedModel} API Error:`, data.error);
+          toast.error("Fehler beim Generieren der Antwort: " + data.error);
+          return;
+        }
 
-      if (error) {
-        console.error("Supabase function error:", error);
-        toast.error("Fehler bei der Verbindung zum KI-Service");
-        return;
-      }
-
-      if (data?.error) {
-        console.error(`${selectedModel} API Error:`, data.error);
-        toast.error("Fehler beim Generieren der Antwort: " + data.error);
-        return;
-      }
-
-      let answer = '';
-      if (data?.content) {
-        answer = data.content;
-      } else if (data?.answer) {
-        answer = data.answer;
-      } else {
-        console.error("No content in response:", data);
-        toast.error("Keine Antwort erhalten");
-        return;
+        if (data?.content) {
+          answer = data.content;
+        } else if (data?.answer) {
+          answer = data.answer;
+        } else {
+          console.error("No content in response:", data);
+          toast.error("Keine Antwort erhalten");
+          return;
+        }
       }
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
         content: answer,
-        timestamp: new Date()
+        timestamp: new Date(),
+        searchQueries: searchQueries.length > 0 ? searchQueries : undefined,
+        searchPerformed: searchPerformed
       };
-      
+
       setChatHistory(prev => [...prev, assistantMessage]);
-      console.log("Question answered successfully");
+      setQuestion("");
 
     } catch (error) {
       console.error("Error asking question:", error);
       toast.error("Fehler beim Stellen der Frage: " + (error as Error).message);
     } finally {
       setIsLoading(false);
-      setQuestion("");
     }
   };
 
   const clearChat = () => {
     setChatHistory([]);
-    toast.success("Chat-Verlauf gelöscht");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -344,85 +521,112 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
     }
   };
 
-  // Add voice input handler
   const handleVoiceTranscript = (transcript: string) => {
-    console.log("🎤 Voice transcript received:", transcript);
-    
-    // Append to existing question or set as new question
-    if (question.trim()) {
-      setQuestion(prev => prev + " " + transcript);
-      toast.success("Spracheingabe hinzugefügt!");
-    } else {
-      setQuestion(transcript);
-      toast.success("Frage per Sprache erfasst!");
-    }
+    console.log("Voice transcript received:", transcript);
+    setQuestion(transcript);
+    toast.success("Spracheingabe erfasst!");
   };
 
-  // Toggle auto-speech functionality
   const toggleAutoSpeech = () => {
-    const newState = !autoSpeechEnabled;
-    setAutoSpeechEnabled(newState);
+    setAutoSpeechEnabled(!autoSpeechEnabled);
+    toast.success(autoSpeechEnabled ? "Auto-Sprachausgabe deaktiviert" : "Auto-Sprachausgabe aktiviert");
+  };
+
+  const cycleWebSearchMode = () => {
+    const modes: WebSearchMode[] = ['force_off', 'auto', 'force_on'];
+    const currentIndex = modes.indexOf(webSearchMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const nextMode = modes[nextIndex];
     
-    if (newState) {
-      // When enabling, read the latest assistant message if available
-      const latestAssistantMessage = [...chatHistory]
-        .reverse()
-        .find(msg => msg.role === 'assistant');
-      
-      if (latestAssistantMessage) {
-        setLastReadMessageId(latestAssistantMessage.id);
-        toast.success("Automatische Sprachausgabe aktiviert! Letzte Antwort wird vorgelesen.");
-      } else {
-        toast.success("Automatische Sprachausgabe aktiviert!");
-      }
-    } else {
-      setLastReadMessageId(null);
-      toast.success("Automatische Sprachausgabe deaktiviert");
+    setWebSearchMode(nextMode);
+    
+    const modeMessages = {
+      'force_off': "Web-Suche deaktiviert",
+      'auto': "Automatische Web-Suche (KI entscheidet)",
+      'force_on': "Web-Suche immer aktiviert"
+    };
+    
+    toast.success(modeMessages[nextMode]);
+    
+    // Regenerate questions based on new mode
+    generateDynamicQuestions();
+  };
+
+  const getWebSearchModeDisplay = () => {
+    switch (webSearchMode) {
+      case 'force_off':
+        return {
+          icon: <Globe className="h-3 w-3 mr-1 opacity-50" />,
+          text: "Web-Suche AUS",
+          variant: "outline" as const,
+          className: "text-gray-500 border-gray-300"
+        };
+      case 'auto':
+        return {
+          icon: <Brain className="h-3 w-3 mr-1" />,
+          text: "KI entscheidet",
+          variant: "secondary" as const,
+          className: "text-blue-700 bg-blue-100 border-blue-200"
+        };
+      case 'force_on':
+        return {
+          icon: <Zap className="h-3 w-3 mr-1" />,
+          text: "Web-Suche AN",
+          variant: "default" as const,
+          className: "bg-green-600 text-white"
+        };
     }
   };
 
-  // Function to convert article references to clickable links
   const processArticleLinks = (content: string): string => {
-    // Pattern to match article references like "Artikel 1", "Artikel 2", etc.
-    const articlePattern = /\b(?:Artikel|Article)\s+(\d+)\b/gi;
-    
-    return content.replace(articlePattern, (match, articleNumber) => {
-      const index = parseInt(articleNumber) - 1; // Convert to 0-based index
-      
-      if (index >= 0 && index < articles.length) {
-        const article = articles[index];
-        // Create markdown link with article title and URL
-        return `[${match}: "${article.title}"](${article.link})`;
+    // Convert "Artikel X" references to clickable links
+    return content.replace(
+      /Artikel (\d+)/g,
+      (match, articleNumber) => {
+        const index = parseInt(articleNumber) - 1;
+        if (index >= 0 && index < articles.length) {
+          const article = articles[index];
+          return `[Artikel ${articleNumber}](${article.link})`;
+        }
+        return match;
       }
-      
-      return match; // Return original if article not found
-    });
+    );
   };
 
-  // Custom ReactMarkdown component with enhanced link handling
   const MarkdownWithLinks = ({ content }: { content: string }) => {
     const processedContent = processArticleLinks(content);
     
     return (
       <ReactMarkdown
         components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-700">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-          li: ({ children }) => <li className="text-gray-700">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
-          a: ({ href, children, ...props }) => (
-            <a
-              href={href}
-              target="_blank"
+          a: ({ href, children }) => (
+            <a 
+              href={href} 
+              target="_blank" 
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline decoration-blue-600/30 hover:decoration-blue-800 transition-colors"
-              title={`Öffne ${href} in neuem Tab`}
-              {...props}
+              className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
             >
               {children}
               <ExternalLink className="h-3 w-3" />
             </a>
-          )
+          ),
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+          li: ({ children }) => <li className="mb-1">{children}</li>,
+          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          code: ({ children }) => (
+            <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600 mb-2">
+              {children}
+            </blockquote>
+          ),
         }}
       >
         {processedContent}
@@ -508,6 +712,50 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
                         <div className="prose prose-sm max-w-none">
                           <MarkdownWithLinks content={message.content} />
                         </div>
+                        
+                        {/* Web Search Status Indicator */}
+                        {message.searchPerformed && (
+                          <div className="p-2 bg-green-50 rounded border-l-2 border-green-400">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Search className="h-3 w-3 text-green-600" />
+                              <span className="text-xs text-green-700 font-medium">
+                                ✅ Web-Suche durchgeführt
+                              </span>
+                            </div>
+                            {message.searchQueries && message.searchQueries.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-xs text-green-600">Suchbegriffe:</span>
+                                {message.searchQueries.map((query, index) => (
+                                  <div key={index} className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                                    "{query}"
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* No Web Search Indicator */}
+                        {message.searchPerformed === false && webSearchMode === 'auto' && (
+                          <div className="p-2 bg-blue-50 rounded border-l-2 border-blue-400">
+                            <div className="flex items-center gap-1">
+                              <Brain className="h-3 w-3 text-blue-600" />
+                              <span className="text-xs text-blue-700 font-medium">
+                                🧠 KI-Entscheidung: Nur Newsletter-Kontext verwendet
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Force Mode Indicators */}
+                        {webSearchMode === 'force_off' && (
+                          <div className="p-1 bg-gray-100 rounded">
+                            <span className="text-xs text-gray-600">
+                              🚫 Web-Suche deaktiviert
+                            </span>
+                          </div>
+                        )}
+                        
                         {/* TTS Controls for Assistant Messages */}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                           <div className="text-xs opacity-70">
@@ -536,7 +784,9 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
                       </div>
                     ) : (
                       <>
-                        <p className="text-sm">{message.content}</p>
+                        <div className="text-sm">
+                          <MarkdownWithLinks content={message.content} />
+                        </div>
                         <div className="text-xs opacity-70 mt-2">
                           {message.timestamp.toLocaleTimeString()}
                         </div>
@@ -560,6 +810,15 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
                 Newsletter-Inhalt verfügbar
               </Badge>
             )}
+            <Badge 
+              variant={getWebSearchModeDisplay().variant} 
+              className={`text-xs cursor-pointer transition-colors ${getWebSearchModeDisplay().className}`}
+              onClick={cycleWebSearchMode}
+              title="Klicken um Web-Suche Modus zu ändern"
+            >
+              {getWebSearchModeDisplay().icon}
+              {getWebSearchModeDisplay().text}
+            </Badge>
           </div>
 
           <div className="space-y-2">
@@ -622,7 +881,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+            <div className="space-y-2">
               {dynamicQuestions.map((suggestion, index) => (
                 <Button
                   key={index}
@@ -640,7 +899,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
             {/* Article context info */}
             {articles.length > 0 && (
-              <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="bg-blue-50 p-3 rounded-lg mt-3">
                 <p className="text-xs text-blue-700 mb-2">
                   📊 Basierend auf {articles.length} Artikeln {newsletterContent ? 'und Newsletter-Inhalt' : 'dieses Newsletters'}
                 </p>

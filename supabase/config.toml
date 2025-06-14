@@ -37,6 +37,9 @@ verify_jwt = false
 [functions.mistral-ai]
 verify_jwt = false
 
+[functions.aci-brave-search]
+verify_jwt = false
+
 [functions.newsletter-send]
 verify_jwt = false
 
