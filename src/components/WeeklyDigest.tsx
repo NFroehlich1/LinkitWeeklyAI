@@ -10,7 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import NewsletterSubscribeModal from "./NewsletterSubscribeModal";
 import ArticleRanking from "./ArticleRanking";
 import NewsletterAskAbout from "./NewsletterAskAbout";
-import { Calendar, FileEdit, Mail, RefreshCw, TrendingUp, Archive, CheckCircle, AlertTriangle, Save, Zap, Star, MessageSquare } from "lucide-react";
+import { Calendar, FileEdit, Mail, RefreshCw, TrendingUp, Archive, CheckCircle, AlertTriangle, Save, Zap, Star, MessageSquare, List } from "lucide-react";
 import NewsService from "@/services/NewsService";
 import NewsletterArchiveService from "@/services/NewsletterArchiveService";
 import { supabase } from "@/integrations/supabase/client";
@@ -550,6 +550,32 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                               : `${t('digest.top_10')} ${displayArticles.length}`
                           }
                         </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+                          <button
+                            onClick={() => setShowAllArticles(false)}
+                            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                              !showAllArticles 
+                                ? 'bg-primary text-white shadow-sm' 
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Star className="h-4 w-4" />
+                            {t('digest.top_10')}
+                          </button>
+                          <button
+                            onClick={() => setShowAllArticles(true)}
+                            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                              showAllArticles 
+                                ? 'bg-primary text-white shadow-sm' 
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <List className="h-4 w-4" />
+                            {t('digest.show_all')}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
