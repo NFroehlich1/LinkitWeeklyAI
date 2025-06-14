@@ -38,6 +38,12 @@ const Index = () => {
     fetchNews();
   }, []);
 
+  // Update AI model preference when selectedModel changes
+  useEffect(() => {
+    console.log(`🤖 Index: Updating AI model preference to ${selectedModel}`);
+    newsService.setPreferredAIModel(selectedModel);
+  }, [selectedModel, newsService]);
+
   const testLLMModel = async () => {
     setModelTestLoading(true);
     try {

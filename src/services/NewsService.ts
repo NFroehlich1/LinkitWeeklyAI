@@ -398,6 +398,17 @@ class NewsService {
   public getDecoderService(): DecoderService {
     return this.decoderService;
   }
+
+  // Set the preferred AI model for all AI operations
+  public setPreferredAIModel(model: 'gemini' | 'mistral' | 'auto'): void {
+    console.log(`=== UPDATING AI MODEL PREFERENCE TO: ${model.toUpperCase()} ===`);
+    this.decoderService.setPreferredProvider(model);
+  }
+
+  // Get the current AI model preference  
+  public getPreferredAIModel(): string {
+    return this.decoderService.getPreferredProvider();
+  }
 }
 
 export default NewsService;

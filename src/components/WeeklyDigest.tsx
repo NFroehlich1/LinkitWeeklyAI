@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +39,14 @@ const WeeklyDigest = ({ digest, apiKey, newsService, selectedModel = 'gemini' }:
   const [improvedTitles, setImprovedTitles] = useState<Record<string, string>>({});
   const [currentDigest, setCurrentDigest] = useState<WeeklyDigestType>(digest);
   const [showAllArticles, setShowAllArticles] = useState<boolean>(false);
+  
+  // Update AI model preference when selectedModel changes
+  useEffect(() => {
+    if (newsService && selectedModel) {
+      console.log(`🤖 WeeklyDigest: Updating AI model preference to ${selectedModel}`);
+      newsService.setPreferredAIModel(selectedModel);
+    }
+  }, [selectedModel, newsService]);
   
   const getArticleId = (article: RssItem): string => {
     return article.guid || article.link;
@@ -651,6 +659,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService, selectedModel = 'gemini' }:
                 <NewsletterAskAbout 
                   articles={displayArticles} 
                   newsletterContent={generatedContent || undefined}
+                  selectedModel={selectedModel}
                 />
               </TabsContent>
             </Tabs>
