@@ -585,7 +585,8 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
 
               <TabsContent value="ask" className="mt-0">
                 <NewsletterAskAbout 
-                  content={generatedContent || currentDigest.items.map(article => `${article.title}: ${article.description}`).join('\n\n')}
+                  articles={currentDigest.items}
+                  newsletterContent={generatedContent}
                 />
               </TabsContent>
             </Tabs>
