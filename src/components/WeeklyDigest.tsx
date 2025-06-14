@@ -20,9 +20,10 @@ interface WeeklyDigestProps {
   digest: WeeklyDigestType;
   apiKey: string;
   newsService?: NewsService;
+  selectedModel?: 'gemini' | 'mistral';
 }
 
-const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
+const WeeklyDigest = ({ digest, apiKey, newsService, selectedModel = 'gemini' }: WeeklyDigestProps) => {
   const { t } = useTranslation();
   
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -569,6 +570,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                           item={item}
                           onTitleImproved={handleTitleImproved}
                           onDelete={handlePermanentDeleteArticle}
+                          selectedModel={selectedModel}
                         />
                       ))}
                     </div>

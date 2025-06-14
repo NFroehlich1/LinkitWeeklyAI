@@ -9,7 +9,7 @@ max_rows = 1000
 
 [auth]
 enabled = true
-port = 54324
+# port = 54324  # Removed - this key is no longer valid
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://lovable.app"]
 jwt_expiry = 3600
@@ -28,10 +28,13 @@ port = 54322
 enabled = true
 port = 54323
 
-[edge_functions]
-enabled = true
+# Fixed: renamed from [edge_functions] to [functions]
+[functions]
 
 [functions.gemini-ai]
+verify_jwt = false
+
+[functions.mistral-ai]
 verify_jwt = false
 
 [functions.newsletter-send]

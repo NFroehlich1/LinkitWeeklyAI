@@ -16,9 +16,10 @@ interface NewsCardProps {
   isLoading?: boolean;
   onDelete?: (item: RssItem) => void;
   onTitleImproved?: (item: RssItem, newTitle: string) => void;
+  selectedModel?: 'gemini' | 'mistral';
 }
 
-const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCardProps) => {
+const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved, selectedModel = 'gemini' }: NewsCardProps) => {
   const { t } = useTranslation();
   const { title, link, pubDate, description, categories, sourceName, aiSummary, content } = item;
   const [isOpen, setIsOpen] = useState(false);
@@ -138,6 +139,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
     setIsGeneratingAiSummary(true);
     try {
       console.log("Generating AI summary for article:", localTitle);
+      console.log("Using AI provider:", selectedModel);
       console.log("Article data being sent:", {
         title: item.title,
         description: item.description?.substring(0, 100),
@@ -145,7 +147,8 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
         sourceName: item.sourceName
       });
       
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { 
           action: 'generate-article-summary',
           data: { 
@@ -166,7 +169,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
       }
 
       if (data.error) {
-        console.error("Gemini API Error:", data.error);
+        console.error(`${selectedModel} API Error:`, data.error);
         toast.error(t('newsCard.summaryError'));
         return;
       }
@@ -192,8 +195,10 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
     setIsImprovingTitle(true);
     try {
       console.log("Improving title for article:", localTitle);
+      console.log("Using AI provider:", selectedModel);
       
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { 
           action: 'improve-article-title',
           data: { 
@@ -212,7 +217,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
       }
 
       if (data.error) {
-        console.error("Gemini API Error:", data.error);
+        console.error(`${selectedModel} API Error:`, data.error);
         toast.error("Fehler bei der Titel-Verbesserung");
         return;
       }
