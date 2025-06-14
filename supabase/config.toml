@@ -54,3 +54,6 @@ verify_jwt = false
 
 [functions.qa-archive-search]
 verify_jwt = false
+
+[functions.rapid-processor]
+verify_jwt = false

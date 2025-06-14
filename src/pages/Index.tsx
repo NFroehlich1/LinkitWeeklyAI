@@ -12,6 +12,7 @@ import Header from "@/components/Header";
 import CustomArticleImporter from "@/components/CustomArticleImporter";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 import { Link } from "react-router-dom";
 
 const Index = () => {
@@ -25,6 +26,7 @@ const Index = () => {
   const [improvingTitles, setImprovingTitles] = useState<Set<string>>(new Set());
   const [debugLoading, setDebugLoading] = useState(false);
   const [geminiTestLoading, setGeminiTestLoading] = useState(false);
+  const [elevenLabsTestLoading, setElevenLabsTestLoading] = useState(false);
 
   useEffect(() => {
     fetchNews();
@@ -58,6 +60,62 @@ const Index = () => {
       toast.error(`Gemini Test Fehler: ${(error as Error).message}`);
     } finally {
       setGeminiTestLoading(false);
+    }
+  };
+
+  const testElevenLabsAPI = async () => {
+    setElevenLabsTestLoading(true);
+    try {
+      console.log("=== DEBUG: TESTING ELEVEN LABS API ===");
+      toast.info("Teste Eleven Labs API...");
+      
+      const { data, error } = await supabase.functions.invoke('rapid-processor', {
+        body: { 
+          action: 'verify-key'
+        }
+      });
+
+      if (error) {
+        console.error("Supabase function error:", error);
+        
+        // Enhanced error handling based on GitHub issue #45
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const errorMessage = await error.context.json();
+            console.error('Function returned an error:', errorMessage);
+            toast.error(`Edge Function Fehler: ${errorMessage.error || JSON.stringify(errorMessage)}`);
+          } catch (jsonError) {
+            try {
+              const errorText = await error.context.text();
+              console.error('Function returned text error:', errorText);
+              toast.error(`Edge Function Fehler: ${errorText}`);
+            } catch (textError) {
+              console.error('Could not parse error response:', textError);
+              toast.error(`Edge Function Fehler: HTTP ${error.context.status || 'unknown status'}`);
+            }
+          }
+        } else if (error instanceof FunctionsRelayError) {
+          console.error('Relay error:', error.message);
+          toast.error(`Relay Fehler: ${error.message}`);
+        } else if (error instanceof FunctionsFetchError) {
+          console.error('Fetch error:', error.message);
+          toast.error(`Netzwerk Fehler: ${error.message}`);
+        } else {
+          toast.error(`Unbekannter Fehler: ${error.message}`);
+        }
+        return;
+      }
+
+      if (data.isValid) {
+        toast.success(`✅ Eleven Labs API funktioniert: ${data.message}`);
+      } else {
+        toast.error(`❌ Eleven Labs API Problem: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Eleven Labs API test error:", error);
+      toast.error(`Eleven Labs Test Fehler: ${(error as Error).message}`);
+    } finally {
+      setElevenLabsTestLoading(false);
     }
   };
 
@@ -292,6 +350,20 @@ const Index = () => {
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
               {geminiTestLoading ? "Teste..." : "Gemini API Test"}
+            </Button>
+            
+            <Button 
+              onClick={testElevenLabsAPI}
+              disabled={elevenLabsTestLoading}
+              variant="outline" 
+              className="bg-green-50 border-green-200 hover:bg-green-100"
+            >
+              {elevenLabsTestLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {elevenLabsTestLoading ? "Teste..." : "Eleven Labs Test"}
             </Button>
           </div>
         </div>

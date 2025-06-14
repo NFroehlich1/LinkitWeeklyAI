@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { RssItem } from "@/types/newsTypes";
-import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb, ExternalLink } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Bot, User, TrendingUp, Lightbulb, ExternalLink, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from 'react-markdown';
 import VoiceInput from './VoiceInput';
+import ElevenLabsTTS from './ElevenLabsTTS';
 
 interface NewsletterAskAboutProps {
   articles: RssItem[];
@@ -27,10 +28,28 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [dynamicQuestions, setDynamicQuestions] = useState<string[]>([]);
+  const [autoSpeechEnabled, setAutoSpeechEnabled] = useState(false);
+  const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     generateDynamicQuestions();
   }, [articles, newsletterContent]);
+
+  // Auto-speech effect - reads new assistant messages when auto-speech is enabled
+  useEffect(() => {
+    if (!autoSpeechEnabled || chatHistory.length === 0) return;
+
+    // Find the latest assistant message
+    const latestAssistantMessage = [...chatHistory]
+      .reverse()
+      .find(msg => msg.role === 'assistant');
+
+    if (latestAssistantMessage && latestAssistantMessage.id !== lastReadMessageId) {
+      console.log("🔊 Auto-reading new assistant message:", latestAssistantMessage.id);
+      setLastReadMessageId(latestAssistantMessage.id);
+      // The ElevenLabsTTS component will handle the actual speech
+    }
+  }, [chatHistory, autoSpeechEnabled, lastReadMessageId]);
 
   const generateDynamicQuestions = () => {
     console.log("🔄 Generating new dynamic questions...");
@@ -336,6 +355,29 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
     }
   };
 
+  // Toggle auto-speech functionality
+  const toggleAutoSpeech = () => {
+    const newState = !autoSpeechEnabled;
+    setAutoSpeechEnabled(newState);
+    
+    if (newState) {
+      // When enabling, read the latest assistant message if available
+      const latestAssistantMessage = [...chatHistory]
+        .reverse()
+        .find(msg => msg.role === 'assistant');
+      
+      if (latestAssistantMessage) {
+        setLastReadMessageId(latestAssistantMessage.id);
+        toast.success("Automatische Sprachausgabe aktiviert! Letzte Antwort wird vorgelesen.");
+      } else {
+        toast.success("Automatische Sprachausgabe aktiviert!");
+      }
+    } else {
+      setLastReadMessageId(null);
+      toast.success("Automatische Sprachausgabe deaktiviert");
+    }
+  };
+
   // Function to convert article references to clickable links
   const processArticleLinks = (content: string): string => {
     // Pattern to match article references like "Artikel 1", "Artikel 2", etc.
@@ -388,7 +430,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
   return (
     <Card className="mt-6 shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/80">
       <CardHeader className="border-b bg-white/70 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
               <MessageSquare className="h-5 w-5 text-primary" />
@@ -402,11 +444,33 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
               </p>
             </div>
           </div>
-          {chatHistory.length > 0 && (
-            <Button variant="outline" size="sm" onClick={clearChat}>
-              Chat löschen
+          <div className="flex items-center gap-2">
+            {/* Auto-Speech Toggle Button */}
+            <Button 
+              variant={autoSpeechEnabled ? "default" : "outline"} 
+              size="sm" 
+              onClick={toggleAutoSpeech}
+              className={autoSpeechEnabled ? "bg-green-600 hover:bg-green-700" : ""}
+              title={autoSpeechEnabled ? "Automatische Sprachausgabe deaktivieren" : "Automatische Sprachausgabe aktivieren"}
+            >
+              {autoSpeechEnabled ? (
+                <>
+                  <Volume2 className="h-4 w-4 mr-1" />
+                  Auto-TTS AN
+                </>
+              ) : (
+                <>
+                  <VolumeX className="h-4 w-4 mr-1" />
+                  Auto-TTS AUS
+                </>
+              )}
             </Button>
-          )}
+            {chatHistory.length > 0 && (
+              <Button variant="outline" size="sm" onClick={clearChat}>
+                Chat löschen
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       
@@ -437,15 +501,44 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
                       : 'bg-white border border-gray-200'
                   }`}>
                     {message.role === 'assistant' ? (
-                      <div className="prose prose-sm max-w-none">
-                        <MarkdownWithLinks content={message.content} />
+                      <div className="space-y-2">
+                        <div className="prose prose-sm max-w-none">
+                          <MarkdownWithLinks content={message.content} />
+                        </div>
+                        {/* TTS Controls for Assistant Messages */}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <div className="text-xs opacity-70">
+                            {message.timestamp.toLocaleTimeString()}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {/* TTS Button with Auto-play */}
+                            <ElevenLabsTTS 
+                              text={message.content}
+                              className="text-xs"
+                              isDisabled={isLoading}
+                              autoPlay={autoSpeechEnabled && message.id === lastReadMessageId}
+                              onAutoPlayComplete={() => {
+                                console.log(`✅ Auto-play completed for message: ${message.id}`);
+                              }}
+                            />
+                            {/* Auto-TTS Indicator */}
+                            {autoSpeechEnabled && message.id === lastReadMessageId && (
+                              <div className="text-xs text-green-600 flex items-center gap-1">
+                                <Volume2 className="h-3 w-3" />
+                                Auto
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-sm">{message.content}</p>
+                      <>
+                        <p className="text-sm">{message.content}</p>
+                        <div className="text-xs opacity-70 mt-2">
+                          {message.timestamp.toLocaleTimeString()}
+                        </div>
+                      </>
                     )}
-                    <div className="text-xs opacity-70 mt-2">
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
                   </div>
                 </div>
               </div>
