@@ -62,9 +62,6 @@ export const DEFAULT_RSS_SOURCES: RssSource[] = [
     enabled: true
   },
   {
-    url: "https://feeds.feedburner.com/oreilly/radar",
-    name: "O'Reilly Radar",
-    enabled: false
     url: "https://www.heise.de/rss/news-atom.xml",
     name: "Heise Online",
     enabled: true
@@ -82,7 +79,6 @@ export const DEFAULT_RSS_SOURCES: RssSource[] = [
   {
     url: "https://techcrunch.com/feed/",
     name: "TechCrunch",
-    enabled: false
     enabled: true
   },
   {
