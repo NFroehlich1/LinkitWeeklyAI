@@ -84,6 +84,32 @@ interface ClusterStats {
 
 const InteractiveDatabase = () => {
   const { t } = useTranslation();
+
+  // Helper function to get translated cluster name
+  const getClusterName = (clusterKey: string): string => {
+    const keyMap: { [key: string]: string } = {
+      "Modellentwicklung": "clusters.modellentwicklung",
+      "Governance & Ethik": "clusters.governanceEthik", 
+      "Education & Learning": "clusters.educationLearning",
+      "Use Cases": "clusters.useCases",
+      "Geopolitische Dynamiken": "clusters.geopolitischeDynamiken",
+      "Wirtschaft & Markt": "clusters.wirtschaftMarkt"
+    };
+    return t(keyMap[clusterKey] || clusterKey);
+  };
+
+  // Helper function to get translated cluster description
+  const getClusterDescription = (clusterKey: string): string => {
+    const keyMap: { [key: string]: string } = {
+      "Modellentwicklung": "clusters.modellentwicklungDesc",
+      "Governance & Ethik": "clusters.governanceEthikDesc",
+      "Education & Learning": "clusters.educationLearningDesc", 
+      "Use Cases": "clusters.useCasesDesc",
+      "Geopolitische Dynamiken": "clusters.geopolitischeDynamikenDesc",
+      "Wirtschaft & Markt": "clusters.wirtschaftMarktDesc"
+    };
+    return t(keyMap[clusterKey] || AI_CLUSTERS[clusterKey as keyof typeof AI_CLUSTERS]?.description || clusterKey);
+  };
   const [newsService] = useState(new NewsService());
   const [articles, setArticles] = useState<EnrichedArticle[]>([]);
   const [clusterStats, setClusterStats] = useState<ClusterStats[]>([]);
@@ -493,7 +519,7 @@ const InteractiveDatabase = () => {
                 <SelectItem value="all">{t('database.allClusters')}</SelectItem>
                 {Object.keys(AI_CLUSTERS).map(cluster => (
                   <SelectItem key={cluster} value={cluster}>
-                    {cluster}
+                    {getClusterName(cluster)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -564,7 +590,7 @@ const InteractiveDatabase = () => {
             <TabsTrigger value="all">{t('database.all')}</TabsTrigger>
             {Object.entries(AI_CLUSTERS).map(([cluster, config]) => (
               <TabsTrigger key={cluster} value={cluster} className={`text-xs ${config.textColor}`}>
-                {cluster.replace('&', '&')}
+                {getClusterName(cluster).replace('&', '&')}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -579,12 +605,12 @@ const InteractiveDatabase = () => {
                         onClick={() => setActiveTab(stat.cluster)}>
                     <CardHeader className="pb-2">
                       <CardTitle className={`text-lg ${config.textColor} flex items-center justify-between`}>
-                        <span>{stat.cluster}</span>
+                        <span>{getClusterName(stat.cluster)}</span>
                         <Badge variant="secondary" className={config.color}>
                           {stat.count}
                         </Badge>
                       </CardTitle>
-                      <p className="text-sm text-gray-600">{config.description}</p>
+                      <p className="text-sm text-gray-600">{getClusterDescription(stat.cluster)}</p>
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-1 mb-2">
@@ -608,8 +634,8 @@ const InteractiveDatabase = () => {
           {Object.keys(AI_CLUSTERS).map(cluster => (
             <TabsContent key={cluster} value={cluster}>
               <div className="mb-4">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{cluster}</h3>
-                <p className="text-gray-600">{AI_CLUSTERS[cluster as keyof typeof AI_CLUSTERS].description}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{getClusterName(cluster)}</h3>
+                <p className="text-gray-600">{getClusterDescription(cluster)}</p>
               </div>
             </TabsContent>
           ))}
@@ -633,7 +659,7 @@ const InteractiveDatabase = () => {
                     <Badge 
                       className={`${getClusterConfig(article.cluster).color} text-white text-xs shadow-sm`}
                     >
-                      {article.cluster}
+                      {getClusterName(article.cluster)}
                     </Badge>
                   </div>
                 )}

@@ -249,6 +249,22 @@ const translations = {
     'database.reloadToLoad': 'Lade die Seite neu, um Artikel zu laden',
     'database.reloadArticles': 'Artikel neu laden',
 
+    // AI Clusters
+    'clusters.modellentwicklung': 'Modellentwicklung',
+    'clusters.governanceEthik': 'Governance & Ethik',
+    'clusters.educationLearning': 'Education & Learning',
+    'clusters.useCases': 'Use Cases',
+    'clusters.geopolitischeDynamiken': 'Geopolitische Dynamiken',
+    'clusters.wirtschaftMarkt': 'Wirtschaft & Markt',
+    
+    // Cluster Descriptions
+    'clusters.modellentwicklungDesc': 'Fortschritte in der KI-Modellentwicklung und -architektur',
+    'clusters.governanceEthikDesc': 'Ethische Herausforderungen und regulatorische Entwicklungen',
+    'clusters.educationLearningDesc': 'KI in der Bildung und Lernprozessen',
+    'clusters.useCasesDesc': 'Praktische Anwendungen von KI in verschiedenen Branchen',
+    'clusters.geopolitischeDynamikenDesc': 'Internationale KI-Politik und geopolitische Spannungen',
+    'clusters.wirtschaftMarktDesc': 'Marktentwicklungen und wirtschaftliche Aspekte der KI',
+
     // General
     'general.loading': 'Laden...',
     'general.error': 'Fehler',
@@ -358,7 +374,6 @@ const translations = {
     'newsletter.successToast': 'Thank you for your interest! You will receive a confirmation email soon.',
     'newsletter.description': 'Receive the most important AI news directly in your inbox every Tuesday morning.',
     'newsletter.alreadyRegistered': 'This email is already registered. Thank you for your interest!',
-    'newsletter.subscribing': 'Subscribing...',
     'newsletter.confirmEmail': 'Please confirm your email address via the link we sent you.',
     'newsletter.weeklyFrequency': 'We send our newsletter once a week.',
     'newsletter.unsubscribeAnytime': 'You can unsubscribe from the newsletter at any time.',
@@ -395,9 +410,6 @@ const translations = {
     'admin.unsubscribeHere': 'Unsubscribe here',
     'admin.selectNewsletterAndGenerate': 'Please select a newsletter and click \'Generate Preview\'.',
     'admin.sendingNewsletter': 'Sending newsletter...',
-    'newsletter.emailLabel': 'Email Address',
-    'newsletter.emailPlaceholder': 'your.email@example.com',
-    'newsletter.emailDescription': 'We only use your email address to send the newsletter.',
 
     // Weekly Digest components
     'weeklyDigest.editTop10': 'Edit Top 10',
@@ -467,6 +479,22 @@ const translations = {
     'database.tryDifferentSearch': 'Try a different search or remove filters',
     'database.reloadToLoad': 'Reload the page to load articles',
     'database.reloadArticles': 'Reload Articles',
+
+    // AI Clusters
+    'clusters.modellentwicklung': 'Model Development',
+    'clusters.governanceEthik': 'Governance & Ethics',
+    'clusters.educationLearning': 'Education & Learning',
+    'clusters.useCases': 'Use Cases',
+    'clusters.geopolitischeDynamiken': 'Geopolitical Dynamics',
+    'clusters.wirtschaftMarkt': 'Economy & Market',
+    
+    // Cluster Descriptions
+    'clusters.modellentwicklungDesc': 'Advances in AI model development and architecture',
+    'clusters.governanceEthikDesc': 'Ethical challenges and regulatory developments',
+    'clusters.educationLearningDesc': 'AI in education and learning processes',
+    'clusters.useCasesDesc': 'Practical applications of AI in various industries',
+    'clusters.geopolitischeDynamikenDesc': 'International AI policy and geopolitical tensions',
+    'clusters.wirtschaftMarktDesc': 'Market developments and economic aspects of AI',
 
     // General
     'general.loading': 'Loading...',
