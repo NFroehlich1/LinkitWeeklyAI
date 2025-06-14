@@ -433,10 +433,63 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="lg:col-span-3">
+        {/* Add Article Component */}
+        <div className="max-w-4xl mx-auto mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{t('index.addArticle')}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowImporter(!showImporter)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                {customArticles.length} {t('index.customArticlesCount')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {showImporter && (
+                <div className="mb-4">
+                  <CustomArticleImporter 
+                    onArticleAdded={handleCustomArticleAdded}
+                    newsService={newsService}
+                  />
+                </div>
+              )}
+              
+              {customArticles.length === 0 ? (
+                <div className="text-center py-4">
+                  <TrendingUp className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 text-sm">{t('index.noCustomArticles')}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {t('index.clickPlusToAdd')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    {t('index.customArticleDescription')} 
+                    <Badge variant="custom" className="mx-1 text-xs">{t('index.customArticleLabel')}</Badge>
+                    {t('index.customArticleDescription2')}
+                  </p>
+                  <div className="text-xs text-gray-500">
+                    {customArticles.length} {t('index.articlesAdded')}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-8 mb-8">
+          {/* Main content area - full width so it can center itself properly */}
+          <div>
             {isLoading ? (
-              <Card className="mb-8">
+              <Card className="mb-8 max-w-4xl mx-auto">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Skeleton className="h-8 w-8 rounded" />
@@ -462,7 +515,7 @@ const Index = () => {
                 selectedModel={selectedModel}
               />
             ) : (
-              <Card>
+              <Card className="max-w-4xl mx-auto">
                 <CardContent className="py-8 text-center">
                   <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600">{t('index.noNewsFound')}</p>
@@ -477,57 +530,6 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
-          </div>
-          
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{t('index.addArticle')}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowImporter(!showImporter)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </CardTitle>
-                <CardDescription>
-                  {customArticles.length} {t('index.customArticlesCount')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {showImporter && (
-                  <div className="mb-4">
-                    <CustomArticleImporter 
-                      onArticleAdded={handleCustomArticleAdded}
-                      newsService={newsService}
-                    />
-                  </div>
-                )}
-                
-                {customArticles.length === 0 ? (
-                  <div className="text-center py-4">
-                    <TrendingUp className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600 text-sm">{t('index.noCustomArticles')}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('index.clickPlusToAdd')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      {t('index.customArticleDescription')} 
-                      <Badge variant="custom" className="mx-1 text-xs">{t('index.customArticleLabel')}</Badge>
-                      {t('index.customArticleDescription2')}
-                    </p>
-                    <div className="text-xs text-gray-500">
-                      {customArticles.length} {t('index.articlesAdded')}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>

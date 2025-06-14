@@ -425,6 +425,10 @@ class NewsService {
     return this.rawArticleService;
   }
 
+  public getDecoderService(): DecoderService {
+    return this.decoderService;
+  }
+
   // ENHANCED: Filter articles by enabled RSS sources AND AI/Data Science relevance
   public filterArticlesByEnabledSources(articles: RssItem[]): RssItem[] {
     console.log("🔍 STARTING INTELLIGENT AI FILTERING");
