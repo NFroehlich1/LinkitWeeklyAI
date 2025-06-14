@@ -311,45 +311,37 @@ const Index = () => {
     }
   };
 
-  // Enhanced filter current articles by enabled sources AND AI relevance (permanently enabled)
-  const filterCurrentArticles = () => {
-    if (newsItems.length > 0) {
-      console.log("🔄 Filtering current articles by enabled sources and AI relevance");
-      
-      // Always use the enhanced AI/Data Science filtering
-      const filteredItems = newsService.filterArticlesByEnabledSources(newsItems);
-      
-      // Update the digest with filtered items
-      if (digest) {
-        const updatedDigest = {
-          ...digest,
-          items: [...filteredItems, ...customArticles.map(article => ({
-            ...article,
-            sourceName: 'Eigener',
-            isCustom: true
-          }))]
-        };
-        setDigest(updatedDigest);
-      }
-      
-      if (filteredItems.length !== newsItems.length) {
-        toast.success(`🎯 KI/Data Science Filter: ${filteredItems.length} von ${newsItems.length} Artikeln angezeigt`);
-      }
-    }
-  };
-
   // Listen for RSS source changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'rss_sources') {
+      if (e.key === 'rss_sources' && newsItems.length > 0) {
         console.log("📡 RSS sources changed, filtering articles");
-        filterCurrentArticles();
+        
+        // Always use the enhanced AI/Data Science filtering
+        const filteredItems = newsService.filterArticlesByEnabledSources(newsItems);
+        
+        // Update the digest with filtered items
+        if (digest) {
+          const updatedDigest = {
+            ...digest,
+            items: [...filteredItems, ...customArticles.map(article => ({
+              ...article,
+              sourceName: 'Eigener',
+              isCustom: true
+            }))]
+          };
+          setDigest(updatedDigest);
+        }
+        
+        if (filteredItems.length !== newsItems.length) {
+          toast.success(`🎯 KI/Data Science Filter: ${filteredItems.length} von ${newsItems.length} Artikeln angezeigt`);
+        }
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [newsItems]);
+  }, [newsItems, digest, customArticles, newsService]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -384,29 +376,6 @@ const Index = () => {
           
                     {/* Debug Buttons */}
           <div className="flex flex-wrap gap-3 justify-center">
-            <Button 
-              onClick={fetchNews}
-              disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isLoading ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              {isLoading ? "Lädt..." : "Load News"}
-            </Button>
-            
-            <Button 
-              onClick={filterCurrentArticles}
-              disabled={!digest || newsItems.length === 0}
-              variant="outline"
-              className="bg-green-50 border-green-200 hover:bg-green-100"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Artikel personalisieren
-            </Button>
-            
             <Button 
               onClick={testRssLoading}
               disabled={debugLoading}
