@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,9 +20,10 @@ interface WeeklyDigestProps {
   digest: WeeklyDigestType;
   apiKey: string;
   newsService?: NewsService;
+  selectedModel?: 'gemini' | 'mistral';
 }
 
-const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
+const WeeklyDigest = ({ digest, apiKey, newsService, selectedModel = 'gemini' }: WeeklyDigestProps) => {
   const { t } = useTranslation();
   
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -38,6 +39,14 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
   const [improvedTitles, setImprovedTitles] = useState<Record<string, string>>({});
   const [currentDigest, setCurrentDigest] = useState<WeeklyDigestType>(digest);
   const [showAllArticles, setShowAllArticles] = useState<boolean>(false);
+  
+  // Update AI model preference when selectedModel changes
+  useEffect(() => {
+    if (newsService && selectedModel) {
+      console.log(`🤖 WeeklyDigest: Updating AI model preference to ${selectedModel}`);
+      newsService.setPreferredAIModel(selectedModel);
+    }
+  }, [selectedModel, newsService]);
   
   const getArticleId = (article: RssItem): string => {
     return article.guid || article.link;
@@ -569,6 +578,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                           item={item}
                           onTitleImproved={handleTitleImproved}
                           onDelete={handlePermanentDeleteArticle}
+                          selectedModel={selectedModel}
                         />
                       ))}
                     </div>
@@ -649,6 +659,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                 <NewsletterAskAbout 
                   articles={displayArticles} 
                   newsletterContent={generatedContent || undefined}
+                  selectedModel={selectedModel}
                 />
               </TabsContent>
             </Tabs>

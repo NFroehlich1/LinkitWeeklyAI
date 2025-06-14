@@ -26,10 +26,11 @@ class NewsService {
   private newsletterArchiveService: NewsletterArchiveService;
   private rawArticleService: RawArticleService;
   private useMockData: boolean = false;
+  private readonly rss2JsonApiKey: string = "4aslwlcwucxcdgqjglhcv7jgpwoxq4yso";
   
   constructor() {
     console.log("=== NEWS SERVICE CONSTRUCTOR ===");
-    console.log("Using Supabase Edge Function for Gemini API");
+    console.log("Using Supabase Edge Functions for AI (Gemini & Mistral)");
     
     this.rssSourceService = new RssSourceService();
     this.rssFeedService = new RssFeedService();
@@ -38,10 +39,10 @@ class NewsService {
     this.newsletterArchiveService = new NewsletterArchiveService();
     this.rawArticleService = new RawArticleService();
     
-    // Create DecoderService without API key (uses Supabase)
-    this.decoderService = new DecoderService();
+    // Create DecoderService with auto provider selection (uses Supabase)
+    this.decoderService = new DecoderService('auto');
     
-    console.log("DecoderService created using Supabase Edge Function");
+    console.log("DecoderService created using Supabase Edge Functions with auto provider selection");
   }
   
   // Set the API key (now ignored, kept for compatibility)
@@ -52,7 +53,7 @@ class NewsService {
   
   // Get the default API key (returns RSS2JSON key for RSS feeds)
   public getDefaultApiKey(): string {
-    return this.decoderService.getRss2JsonApiKey();
+    return this.rss2JsonApiKey;
   }
   
   // Get the Gemini API key (now returns info message)
@@ -208,7 +209,7 @@ class NewsService {
   // Generate AI summary for a specific article
   public async generateArticleSummary(article: RssItem): Promise<string | null> {
     try {
-      return await this.decoderService.generateArticleSummary(article);
+      return await this.decoderService.generateArticleSummary(article.title, article.description || article.content || "");
     } catch (error) {
       console.error('Error generating article summary:', error);
       toast.error(`Fehler bei der Zusammenfassung des Artikels: ${(error as Error).message}`);
@@ -310,7 +311,7 @@ class NewsService {
       const articlesToUse = selectedArticles || digest.items;
       
       console.log("Generating enhanced newsletter summary via Supabase...");
-      const summary = await this.decoderService.generateSummary(digest, articlesToUse, linkedInPage);
+      const summary = await this.decoderService.generateDetailedSummary(digest, articlesToUse, linkedInPage);
       
       // Mark articles as processed if they were successfully used for newsletter generation
       if (summary && articlesToUse.length > 0) {
@@ -392,6 +393,21 @@ class NewsService {
   // Raw article service methods
   public getRawArticleService(): RawArticleService {
     return this.rawArticleService;
+  }
+
+  public getDecoderService(): DecoderService {
+    return this.decoderService;
+  }
+
+  // Set the preferred AI model for all AI operations
+  public setPreferredAIModel(model: 'gemini' | 'mistral' | 'auto'): void {
+    console.log(`=== UPDATING AI MODEL PREFERENCE TO: ${model.toUpperCase()} ===`);
+    this.decoderService.setPreferredProvider(model);
+  }
+
+  // Get the current AI model preference  
+  public getPreferredAIModel(): string {
+    return this.decoderService.getPreferredProvider();
   }
 }
 

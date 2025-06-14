@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { RefreshCw, TrendingUp, Plus, ExternalLink, ChevronDown, ChevronUp, Edit3, GraduationCap, Database } from "lucide-react";
 import NewsService, { WeeklyDigest, RssItem } from "@/services/NewsService";
@@ -16,6 +17,8 @@ import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@s
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/contexts/TranslationContext";
 
+type LLMModel = 'gemini' | 'mistral';
+
 const Index = () => {
   const { t } = useTranslation();
   const [newsService] = useState(new NewsService());
@@ -27,20 +30,28 @@ const Index = () => {
   const [generatingSummaries, setGeneratingSummaries] = useState<Set<string>>(new Set());
   const [improvingTitles, setImprovingTitles] = useState<Set<string>>(new Set());
   const [debugLoading, setDebugLoading] = useState(false);
-  const [geminiTestLoading, setGeminiTestLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<LLMModel>('gemini');
+  const [modelTestLoading, setModelTestLoading] = useState(false);
   const [elevenLabsTestLoading, setElevenLabsTestLoading] = useState(false);
 
   useEffect(() => {
     fetchNews();
   }, []);
 
-  const testGeminiAPI = async () => {
-    setGeminiTestLoading(true);
+  // Update AI model preference when selectedModel changes
+  useEffect(() => {
+    console.log(`🤖 Index: Updating AI model preference to ${selectedModel}`);
+    newsService.setPreferredAIModel(selectedModel);
+  }, [selectedModel, newsService]);
+
+  const testLLMModel = async () => {
+    setModelTestLoading(true);
     try {
-      console.log("=== DEBUG: TESTING GEMINI API ===");
-      toast.info(t('toast.testingGemini'));
+      console.log(`=== DEBUG: TESTING ${selectedModel.toUpperCase()} API ===`);
+      toast.info(selectedModel === 'gemini' ? t('toast.testingGemini') : t('toast.testingMistral'));
       
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { 
           action: 'verify-key'
         }
@@ -48,20 +59,24 @@ const Index = () => {
 
       if (error) {
         console.error("Supabase function error:", error);
-        toast.error(`${t('toast.geminiTestError')} ${error.message}`);
+        const errorToastKey = selectedModel === 'gemini' ? 'toast.geminiTestError' : 'toast.mistralTestError';
+        toast.error(`${t(errorToastKey)} ${error.message}`);
         return;
       }
 
       if (data.isValid) {
-        toast.success(`${t('toast.geminiSuccess')} ${data.message}`);
+        const successToastKey = selectedModel === 'gemini' ? 'toast.geminiSuccess' : 'toast.mistralSuccess';
+        toast.success(`${t(successToastKey)} ${data.message}`);
       } else {
-        toast.error(`${t('toast.geminiError')} ${data.message}`);
+        const errorToastKey = selectedModel === 'gemini' ? 'toast.geminiError' : 'toast.mistralError';
+        toast.error(`${t(errorToastKey)} ${data.message}`);
       }
     } catch (error) {
-      console.error("Gemini API test error:", error);
-      toast.error(`${t('toast.geminiTestError')} ${(error as Error).message}`);
+      console.error(`${selectedModel} API test error:`, error);
+      const errorToastKey = selectedModel === 'gemini' ? 'toast.geminiTestError' : 'toast.mistralTestError';
+      toast.error(`${t(errorToastKey)} ${(error as Error).message}`);
     } finally {
-      setGeminiTestLoading(false);
+      setModelTestLoading(false);
     }
   };
 
@@ -250,30 +265,14 @@ const Index = () => {
     try {
       console.log("Improving title for custom article:", article.title);
       
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
-        body: { 
-          action: 'improve-article-title',
-          data: { article }
-        }
-      });
+      // Use the DecoderService's improved title function which has fallback logic
+      const improvedTitle = await newsService.getDecoderService().improveArticleTitle(article.title, article.description);
 
-      if (error) {
-        console.error("Supabase function error:", error);
-        toast.error(t('index.errorImprovingTitle'));
-        return;
-      }
-
-      if (data.error) {
-        console.error("Gemini API Error:", data.error);
-        toast.error(t('index.errorImprovingTitle'));
-        return;
-      }
-
-      if (data.improvedTitle) {
+      if (improvedTitle) {
         // Update the article title in the customArticles state
         setCustomArticles(prev => prev.map(a => 
           a.guid === articleGuid 
-            ? { ...a, title: data.improvedTitle }
+            ? { ...a, title: improvedTitle }
             : a
         ));
         toast.success(t('toast.titleImproved'));
@@ -323,7 +322,7 @@ const Index = () => {
             </Link>
           </div>
           
-          {/* Debug Buttons */}
+                    {/* Debug Buttons */}
           <div className="flex flex-wrap gap-3 justify-center">
             <Button 
               onClick={testRssLoading}
@@ -339,19 +338,32 @@ const Index = () => {
               {debugLoading ? t('index.testing') : t('index.rssDebugTest')}
             </Button>
             
-            <Button 
-              onClick={testGeminiAPI}
-              disabled={geminiTestLoading}
-              variant="outline" 
-              className="bg-red-50 border-red-200 hover:bg-red-100"
-            >
-              {geminiTestLoading ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              {geminiTestLoading ? t('index.testing') : t('index.geminiApiTest')}
-            </Button>
+            {/* LLM Model Selection and Test */}
+            <div className="flex gap-2 items-center">
+              <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as LLMModel)}>
+                <SelectTrigger className="w-32 bg-blue-50 border-blue-200 hover:bg-blue-100">
+                  <SelectValue placeholder={t('index.selectModel')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini">Gemini</SelectItem>
+                  <SelectItem value="mistral">Mistral</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                onClick={testLLMModel}
+                disabled={modelTestLoading}
+                variant="outline" 
+                className="bg-blue-50 border-blue-200 hover:bg-blue-100"
+              >
+                {modelTestLoading ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                {modelTestLoading ? t('index.testingModel') : t('index.testApiModel')}
+              </Button>
+            </div>
             
             <Button 
               onClick={testElevenLabsAPI}
@@ -395,6 +407,7 @@ const Index = () => {
                 digest={digest} 
                 apiKey={newsService.getGeminiApiKey()}
                 newsService={newsService}
+                selectedModel={selectedModel}
               />
             ) : (
               <Card>

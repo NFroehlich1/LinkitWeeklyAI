@@ -14,6 +14,7 @@ import ElevenLabsTTS from './ElevenLabsTTS';
 interface NewsletterAskAboutProps {
   articles: RssItem[];
   newsletterContent?: string;
+  selectedModel?: 'gemini' | 'mistral';
 }
 
 interface ChatMessage {
@@ -23,7 +24,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutProps) => {
+const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemini' }: NewsletterAskAboutProps) => {
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -231,6 +232,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent }: NewsletterAskAboutP
     
     try {
       console.log("Asking question about newsletter articles:", question);
+      console.log("Using AI provider:", selectedModel);
       console.log("Articles available:", articles.length);
       console.log("Newsletter content available:", !!newsletterContent);
       
@@ -275,7 +277,8 @@ WICHTIG: Wenn du auf spezifische Artikel verweist, verwende IMMER das Format "Ar
 Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
       // Use qa-with-newsletter action for proper Q&A functionality
-      const { data, error } = await supabase.functions.invoke('gemini-ai', {
+      const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { 
           action: 'qa-with-newsletter',
           data: { 
@@ -294,7 +297,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
       }
 
       if (data?.error) {
-        console.error("Gemini API Error:", data.error);
+        console.error(`${selectedModel} API Error:`, data.error);
         toast.error("Fehler beim Generieren der Antwort: " + data.error);
         return;
       }
