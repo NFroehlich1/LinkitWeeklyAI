@@ -17,13 +17,15 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
-
-// Form validation schema
-const formSchema = z.object({
-  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein.")
-});
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const NewsletterSubscribeForm = () => {
+  const { t } = useTranslation();
+  
+  // Form validation schema
+  const formSchema = z.object({
+    email: z.string().email(t('newsletter.emailValidation'))
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -46,13 +48,13 @@ const NewsletterSubscribeForm = () => {
       
       if (response.error) {
         console.error("Error subscribing:", response.error);
-        toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
+        toast.error(t('newsletter.errorMessage'));
         return;
       }
       
       // Show success message
       setIsSuccess(true);
-      toast.success("Vielen Dank für Ihr Interesse! Sie erhalten bald eine Bestätigungs-E-Mail.");
+      toast.success(t('newsletter.successToast'));
       
       // Reset form
       form.reset();
@@ -63,7 +65,7 @@ const NewsletterSubscribeForm = () => {
       }, 5000);
     } catch (error) {
       console.error("Fehler beim Abonnieren:", error);
-      toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
+      toast.error(t('newsletter.errorMessage'));
     } finally {
       setIsSubmitting(false);
     }
@@ -76,9 +78,9 @@ const NewsletterSubscribeForm = () => {
           <div className="mx-auto rounded-full bg-green-100 p-3 w-fit mb-4">
             <Check className="h-6 w-6 text-green-600" />
           </div>
-          <h3 className="text-lg font-medium mb-2">Anmeldung erfolgreich!</h3>
+          <h3 className="text-lg font-medium mb-2">{t('newsletter.successTitle')}</h3>
           <p className="text-muted-foreground">
-            Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gesendet haben.
+            {t('newsletter.successDescription')}
           </p>
         </div>
       ) : (
@@ -89,17 +91,17 @@ const NewsletterSubscribeForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-Mail-Adresse</FormLabel>
+                  <FormLabel>{t('newsletter.emailLabel')}</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="ihre.email@example.com" 
+                      placeholder={t('newsletter.emailPlaceholder')} 
                       type="email"
                       autoComplete="email"
                       {...field} 
                     />
                   </FormControl>
                   <FormDescription>
-                    Wir verwenden Ihre E-Mail-Adresse nur für den Versand des Newsletters.
+                    {t('newsletter.emailDescription')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -108,7 +110,7 @@ const NewsletterSubscribeForm = () => {
               
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               <Mail className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Wird abonniert..." : "Newsletter abonnieren"}
+              {isSubmitting ? t('newsletter.subscribing') : t('newsletter.subscribe')}
             </Button>
           </form>
         </Form>

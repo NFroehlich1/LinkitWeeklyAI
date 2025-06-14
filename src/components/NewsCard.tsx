@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface NewsCardProps {
   item: RssItem;
@@ -18,6 +19,7 @@ interface NewsCardProps {
 }
 
 const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCardProps) => {
+  const { t } = useTranslation();
   const { title, link, pubDate, description, categories, sourceName, aiSummary, content } = item;
   const [isOpen, setIsOpen] = useState(false);
   const [localAiSummary, setLocalAiSummary] = useState<string | null>(aiSummary || null);
@@ -159,26 +161,26 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
 
       if (error) {
         console.error("Supabase function error:", error);
-        toast.error("Fehler bei der Generierung der Zusammenfassung");
+        toast.error(t('newsCard.summaryError'));
         return;
       }
 
       if (data.error) {
         console.error("Gemini API Error:", data.error);
-        toast.error("Fehler bei der Generierung der Zusammenfassung");
+        toast.error(t('newsCard.summaryError'));
         return;
       }
 
       if (data.summary) {
         setLocalAiSummary(data.summary);
-        toast.success("KI-Zusammenfassung basierend auf echtem Artikel generiert");
+        toast.success(t('newsCard.summaryGenerated'));
         console.log("AI summary generated successfully:", data.summary.substring(0, 100));
       } else {
-        toast.error("Keine Zusammenfassung erhalten");
+        toast.error(t('newsCard.noSummaryReceived'));
       }
     } catch (error) {
       console.error("Error generating AI summary:", error);
-      toast.error("Fehler bei der Generierung der Zusammenfassung");
+      toast.error(t('newsCard.summaryError'));
     } finally {
       setIsGeneratingAiSummary(false);
     }
@@ -360,7 +362,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
         <CardContent className="pb-0">
           {!isOpen && localAiSummary && (
             <div>
-              <h4 className="text-sm font-medium mb-2">KI-Zusammenfassung</h4>
+              <h4 className="text-sm font-medium mb-2">{t('newsCard.aiSummary')}</h4>
               <p className="text-sm line-clamp-3">{getPreviewText()}</p>
             </div>
           )}
@@ -370,12 +372,12 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
               {isOpen ? (
                 <>
                   <ChevronUp className="h-4 w-4 mr-1" />
-                  Weniger anzeigen
+                  {t('ui.showLess')}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4 mr-1" />
-                  Mehr anzeigen
+                  {t('ui.showMore')}
                 </>
               )}
             </Button>
@@ -384,16 +386,16 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
           <CollapsibleContent>
             {isGeneratingAiSummary ? (
               <div className="mt-4 border-t pt-4">
-                <h4 className="text-sm font-medium mb-2">KI-Zusammenfassung wird generiert...</h4>
+                <h4 className="text-sm font-medium mb-2">{t('newsCard.generatingSummary')}</h4>
                 <div className="bg-muted/30 p-3 rounded flex items-center gap-2">
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  <p className="text-sm">Analysiere echte Artikel-Inhalte...</p>
+                  <p className="text-sm">{t('ui.analysisRealContent')}</p>
                 </div>
               </div>
             ) : localAiSummary ? (
               <div className="mt-4 border-t pt-4">
                 <h4 className="text-sm font-medium mb-2 flex justify-between">
-                  <span>KI-Zusammenfassung</span>
+                  <span>{t('newsCard.aiSummary')}</span>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -405,7 +407,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
                     disabled={isGeneratingAiSummary}
                   >
                     <RefreshCw className={`h-3 w-3 mr-1 ${isGeneratingAiSummary ? 'animate-spin' : ''}`} />
-                    Neu generieren
+                    {t('ui.regenerate')}
                   </Button>
                 </h4>
                 <div className="bg-muted/30 p-3 rounded">
@@ -414,7 +416,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
               </div>
             ) : (
               <div className="mt-4 border-t pt-4">
-                <h4 className="text-sm font-medium mb-2">KI-Zusammenfassung</h4>
+                <h4 className="text-sm font-medium mb-2">{t('newsCard.aiSummary')}</h4>
                 <Button
                   variant="outline"
                   size="sm"
@@ -425,11 +427,11 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
                   {isGeneratingAiSummary ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Analysiere echte Inhalte...
+{t('ui.analysisRealContentShort')}
                     </>
                   ) : (
                     <>
-                      KI-Zusammenfassung basierend auf echtem Artikel
+                      {t('newsCard.generateSummary')}
                     </>
                   )}
                 </Button>
@@ -452,7 +454,7 @@ const NewsCard = ({ item, isLoading = false, onDelete, onTitleImproved }: NewsCa
             onClick={() => window.open(link, '_blank')}
           >
             <ExternalLink className="h-4 w-4" />
-            Artikel lesen
+{t('newsCard.readArticle')}
           </Button>
         </div>
       </CardFooter>

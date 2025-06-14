@@ -1,9 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { navItems } from "@/nav-items";
+import { useTranslation } from "@/contexts/TranslationContext";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const Header = () => {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <header className="border-b border-white/20 bg-white/40 backdrop-blur-xl sticky top-0 z-50 shadow-lg shadow-black/5">
@@ -11,7 +14,7 @@ const Header = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
-              📰 LINKIT NEWS
+              📰 {t('header.title')}
             </span>
           </Link>
           
@@ -27,10 +30,11 @@ const Header = () => {
                   }`}
                 >
                   {item.icon}
-                  {item.title}
+                  {t(item.titleKey)}
                 </Button>
               </Link>
             ))}
+            <LanguageSwitcher />
           </nav>
         </div>
       </div>

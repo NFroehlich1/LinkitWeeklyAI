@@ -26,17 +26,19 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface NewsletterSubscribeModalProps {
   newsletterContent?: string;
 }
 
-// Form validation schema
-const formSchema = z.object({
-  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein.")
-});
-
 const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModalProps) => {
+  const { t } = useTranslation();
+  
+  // Form validation schema
+  const formSchema = z.object({
+    email: z.string().email(t('newsletter.emailValidation'))
+  });
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -63,12 +65,12 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
       if (checkError && checkError.code !== 'PGRST116') {
         // Error other than "no rows returned"
         console.error("Error checking subscriber:", checkError);
-        toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
+        toast.error(t('newsletter.errorMessage'));
         return;
       }
 
       if (existingSubscriber) {
-        toast.info("Diese E-Mail ist bereits registriert. Vielen Dank für Ihr Interesse!");
+        toast.info(t('newsletter.alreadyRegistered'));
         setIsSuccess(true);
       } else {
         // Insert new subscriber
@@ -78,13 +80,13 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
 
         if (insertError) {
           console.error("Error adding subscriber:", insertError);
-          toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
+          toast.error(t('newsletter.errorMessage'));
           return;
         }
 
         // Show success message
         setIsSuccess(true);
-        toast.success("Vielen Dank für Ihr Interesse! Sie erhalten bald eine Bestätigungs-E-Mail.");
+        toast.success(t('newsletter.successToast'));
       }
       
       // Reset success state after 3 seconds and close dialog
@@ -95,7 +97,7 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
       }, 3000);
     } catch (error) {
       console.error("Fehler beim Abonnieren:", error);
-      toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
+      toast.error(t('newsletter.errorMessage'));
     } finally {
       setIsSubmitting(false);
     }
@@ -106,14 +108,14 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
       <DialogTrigger asChild>
         <Button variant="default" className="gap-2">
           <Mail className="h-4 w-4" />
-          Newsletter abonnieren
+{t('newsletter.subscribe')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>KI-Newsletter abonnieren</DialogTitle>
+          <DialogTitle>{t('newsletter.subscribeTitle')}</DialogTitle>
           <DialogDescription>
-            Erhalten Sie jeden Dienstagmorgen die wichtigsten KI-Nachrichten direkt in Ihrem Postfach.
+{t('newsletter.description')}
           </DialogDescription>
         </DialogHeader>
         
@@ -122,9 +124,9 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
             <div className="mx-auto rounded-full bg-green-100 p-3 w-fit mb-4">
               <Check className="h-6 w-6 text-green-600" />
             </div>
-            <h3 className="text-lg font-medium mb-2">Anmeldung erfolgreich!</h3>
+            <h3 className="text-lg font-medium mb-2">{t('newsletter.successTitle')}</h3>
             <p className="text-muted-foreground">
-              Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gesendet haben.
+              {t('newsletter.confirmEmail')}
             </p>
           </div>
         ) : (
@@ -135,16 +137,16 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-Mail-Adresse</FormLabel>
+                    <FormLabel>{t('newsletter.emailLabel')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="ihre.email@example.com" 
+                        placeholder={t('newsletter.emailPlaceholder')} 
                         type="email"
                         {...field} 
                       />
                     </FormControl>
                     <FormDescription>
-                      Wir verwenden Ihre E-Mail-Adresse nur für den Versand des Newsletters.
+                      {t('newsletter.emailDescription')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -153,7 +155,7 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
               
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Wird abonniert..." : "Abonnieren"}
+                  {isSubmitting ? t('newsletter.subscribing') : t('newsletter.subscribe')}
                 </Button>
               </DialogFooter>
             </form>

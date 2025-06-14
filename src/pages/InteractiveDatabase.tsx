@@ -12,6 +12,7 @@ import NewsService, { RssItem } from '@/services/NewsService';
 import NewsCard from '@/components/NewsCard';
 import Header from '@/components/Header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // Spezifische Cluster Definition für die interaktive Datenbank
 const AI_CLUSTERS = {
@@ -82,6 +83,7 @@ interface ClusterStats {
 }
 
 const InteractiveDatabase = () => {
+  const { t } = useTranslation();
   const [newsService] = useState(new NewsService());
   const [articles, setArticles] = useState<EnrichedArticle[]>([]);
   const [clusterStats, setClusterStats] = useState<ClusterStats[]>([]);
@@ -138,7 +140,7 @@ const InteractiveDatabase = () => {
 
       if (allItems.length === 0) {
         console.warn("⚠️ No articles found at all!");
-        setError("Keine Artikel gefunden. Versuche die Seite neu zu laden.");
+        setError(t('database.noArticlesFoundError'));
         return;
       }
 
@@ -155,13 +157,13 @@ const InteractiveDatabase = () => {
 
       setArticles(enrichedArticles);
       console.log("✅ Articles enriched and loaded for interactive database");
-      toast.success(`${enrichedArticles.length} Artikel geladen und nach Relevanz klassifiziert`);
+      toast.success(`${enrichedArticles.length} ${t('database.articlesLoadedAndClassified')}`);
 
     } catch (error) {
       console.error('❌ Error loading articles:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      setError(`Fehler beim Laden der Artikel: ${errorMessage}`);
-      toast.error("Fehler beim Laden der Artikel");
+      setError(`${t('database.errorLoadingArticles')}: ${errorMessage}`);
+      toast.error(t('database.errorLoadingArticles'));
     } finally {
       setIsLoading(false);
       console.log("🏁 loadArticles finished");
@@ -392,11 +394,11 @@ const InteractiveDatabase = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
             <Database className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-red-600 mb-2">Fehler beim Laden</h3>
+            <h3 className="text-xl font-semibold text-red-600 mb-2">{t('database.errorLoading')}</h3>
             <p className="text-gray-500 mb-4">{error}</p>
             <Button onClick={loadArticles} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Erneut versuchen
+              {t('database.tryAgain')}
             </Button>
           </div>
         </div>
@@ -424,27 +426,27 @@ const InteractiveDatabase = () => {
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3">
               <Database className="h-8 w-8 text-blue-600" />
-              KI-News Datenbank
+              {t('database.title')}
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Durchsuche und entdecke KI-News sortiert nach thematischen Clustern und Relevanz
+              {t('database.subtitle')}
             </p>
           </div>
           
           <div className="text-center py-12">
             <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">Noch keine Artikel verfügbar</h3>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('database.noArticlesAvailable')}</h3>
             <p className="text-gray-500 mb-4">
-              Lade zuerst einige Artikel über die Hauptseite oder verwende den RSS Debug Test.
+              {t('database.loadArticlesFirst')}
             </p>
             <div className="flex gap-3 justify-center">
               <Button onClick={loadArticles} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Artikel laden
+                {t('database.loadArticles')}
               </Button>
               <a href="/" className="inline-block">
                 <Button variant="default">
-                  Zur Hauptseite
+                  {t('database.toMainPage')}
                 </Button>
               </a>
             </div>
@@ -463,10 +465,10 @@ const InteractiveDatabase = () => {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3">
             <Database className="h-8 w-8 text-blue-600" />
-            KI-News Datenbank
+            {t('database.title')}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Durchsuche und entdecke KI-News sortiert nach thematischen Clustern und Relevanz
+            {t('database.subtitle')}
           </p>
         </div>
 
@@ -476,7 +478,7 @@ const InteractiveDatabase = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Suche nach Artikeln..."
+                placeholder={t('database.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -485,10 +487,10 @@ const InteractiveDatabase = () => {
             
             <Select value={selectedCluster} onValueChange={setSelectedCluster}>
               <SelectTrigger>
-                <SelectValue placeholder="Cluster auswählen" />
+                <SelectValue placeholder={t('database.selectCluster')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Cluster</SelectItem>
+                <SelectItem value="all">{t('database.allClusters')}</SelectItem>
                 {Object.keys(AI_CLUSTERS).map(cluster => (
                   <SelectItem key={cluster} value={cluster}>
                     {cluster}
@@ -502,9 +504,9 @@ const InteractiveDatabase = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="relevance">Nach Relevanz</SelectItem>
-                <SelectItem value="clusterRelevance">Nach Cluster-Relevanz</SelectItem>
-                <SelectItem value="date">Nach Datum</SelectItem>
+                <SelectItem value="relevance">{t('database.sortByRelevance')}</SelectItem>
+                <SelectItem value="clusterRelevance">{t('database.sortByClusterRelevance')}</SelectItem>
+                <SelectItem value="date">{t('database.sortByDate')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -516,7 +518,7 @@ const InteractiveDatabase = () => {
                 className="flex-1"
               >
                 <TrendingDown className="h-4 w-4 mr-1" />
-                Absteigend
+                {t('database.descending')}
               </Button>
               <Button
                 variant={sortOrder === 'asc' ? 'default' : 'outline'}
@@ -525,7 +527,7 @@ const InteractiveDatabase = () => {
                 className="flex-1"
               >
                 <TrendingUp className="h-4 w-4 mr-1" />
-                Aufsteigend
+                {t('database.ascending')}
               </Button>
             </div>
           </div>
@@ -538,7 +540,7 @@ const InteractiveDatabase = () => {
                 onClick={() => setViewMode('cards')}
               >
                 <Grid3X3 className="h-4 w-4 mr-2" />
-                Karten
+                {t('database.cards')}
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -546,12 +548,12 @@ const InteractiveDatabase = () => {
                 onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4 mr-2" />
-                Liste
+                {t('database.list')}
               </Button>
             </div>
             
             <div className="text-sm text-gray-600">
-              {filteredArticles.length} von {articles.length} Artikeln
+              {filteredArticles.length} {t('database.articlesOf')} {articles.length} {t('database.articles')}
             </div>
           </div>
         </div>
@@ -559,7 +561,7 @@ const InteractiveDatabase = () => {
         {/* Cluster Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="grid grid-cols-7 w-full">
-            <TabsTrigger value="all">Alle</TabsTrigger>
+            <TabsTrigger value="all">{t('database.all')}</TabsTrigger>
             {Object.entries(AI_CLUSTERS).map(([cluster, config]) => (
               <TabsTrigger key={cluster} value={cluster} className={`text-xs ${config.textColor}`}>
                 {cluster.replace('&', '&')}
@@ -658,11 +660,11 @@ const InteractiveDatabase = () => {
         ) : (
           <div className="text-center py-12">
             <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">Keine Artikel gefunden</h3>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('database.noArticlesFoundInFilter')}</h3>
             <p className="text-gray-500">
               {searchTerm || (selectedCluster && selectedCluster !== 'all')
-                ? "Versuche eine andere Suche oder entferne Filter"
-                : "Lade die Seite neu, um Artikel zu laden"
+                ? t('database.tryDifferentSearch')
+                : t('database.reloadToLoad')
               }
             </p>
           </div>
@@ -672,7 +674,7 @@ const InteractiveDatabase = () => {
         <div className="flex justify-center mt-8">
           <Button onClick={loadArticles} disabled={isLoading} variant="outline">
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Artikel neu laden
+            {t('database.reloadArticles')}
           </Button>
         </div>
       </div>
