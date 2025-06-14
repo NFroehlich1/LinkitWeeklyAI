@@ -26,6 +26,7 @@ class NewsService {
   private newsletterArchiveService: NewsletterArchiveService;
   private rawArticleService: RawArticleService;
   private useMockData: boolean = false;
+  private preferredAIModel: 'gemini' | 'mistral' = 'gemini';
   
   constructor() {
     console.log("=== NEWS SERVICE CONSTRUCTOR ===");
@@ -49,6 +50,17 @@ class NewsService {
   public setApiKey(apiKey: string): void {
     console.log("=== API KEY SETTING IGNORED ===");
     console.log("Using Supabase Edge Function instead of direct API key");
+  }
+
+  // Set preferred AI model for operations
+  public setPreferredAIModel(model: 'gemini' | 'mistral'): void {
+    console.log(`=== SETTING PREFERRED AI MODEL TO: ${model.toUpperCase()} ===`);
+    this.preferredAIModel = model;
+  }
+
+  // Get preferred AI model
+  public getPreferredAIModel(): 'gemini' | 'mistral' {
+    return this.preferredAIModel;
   }
   
   // Get the default API key (returns RSS2JSON key for RSS feeds)
@@ -85,6 +97,10 @@ class NewsService {
   
   public toggleRssSource(url: string, enabled: boolean): boolean {
     return this.rssSourceService.toggleRssSource(url, enabled);
+  }
+
+  public resetRssSourcesToDefaults(): void {
+    this.rssSourceService.resetToDefaults();
   }
   
   // Enhanced fetch news with guaranteed high article count and database storage

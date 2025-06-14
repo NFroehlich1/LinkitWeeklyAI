@@ -95,6 +95,11 @@ const RssFeedManager = () => {
     }
   };
 
+  const handleResetToDefaults = () => {
+    newsService.resetRssSourcesToDefaults();
+    loadSources();
+  };
+
   const getStatusBadge = (source: RssSource) => {
     if (source.enabled) {
       return <Badge variant="default" className="bg-green-100 text-green-800">Aktiv</Badge>;
@@ -152,6 +157,15 @@ const RssFeedManager = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Alle testen
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleResetToDefaults}
+                className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <Settings className="h-4 w-4" />
+                Standard-Quellen laden
               </Button>
             </div>
           </div>

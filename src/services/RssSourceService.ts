@@ -1,4 +1,5 @@
 import { RssSource } from '../types/newsTypes';
+import { DEFAULT_RSS_SOURCES } from '../data/mockNews';
 import { toast } from "sonner";
 
 /**
@@ -16,17 +17,11 @@ class RssSourceService {
     try {
       const savedSources = localStorage.getItem('rss_sources');
       
-      // Wenn keine Quellen gespeichert sind, nur The Decoder als Standard
+      // Wenn keine Quellen gespeichert sind, alle Standard-Quellen laden
       if (!savedSources) {
-        this.rssSources = [
-          {
-            name: "The Decoder - KI News",
-            url: "https://the-decoder.de/feed/",
-            enabled: true
-          }
-        ];
+        this.rssSources = [...DEFAULT_RSS_SOURCES];
         this.saveRssSources();
-        console.log("✅ Standard RSS-Quelle (The Decoder) initialisiert");
+        console.log(`✅ ${DEFAULT_RSS_SOURCES.length} Standard RSS-Quellen initialisiert`);
       } else {
         const parsedSources = JSON.parse(savedSources);
         
@@ -41,28 +36,16 @@ class RssSourceService {
           return source;
         });
         
-        // If no valid sources found, add default
+        // If no valid sources found, add all defaults
         if (this.rssSources.length === 0) {
-          this.rssSources = [
-            {
-              name: "The Decoder - KI News",
-              url: "https://the-decoder.de/feed/",
-              enabled: true
-            }
-          ];
+          this.rssSources = [...DEFAULT_RSS_SOURCES];
         }
         
         this.saveRssSources();
       }
     } catch (error) {
       console.error("Error loading RSS sources:", error);
-      this.rssSources = [
-        {
-          name: "The Decoder - KI News",
-          url: "https://the-decoder.de/feed/",
-          enabled: true
-        }
-      ];
+      this.rssSources = [...DEFAULT_RSS_SOURCES];
       this.saveRssSources();
     }
   }
@@ -77,6 +60,14 @@ class RssSourceService {
     }
   }
   
+  // Reset to default RSS sources
+  public resetToDefaults(): void {
+    this.rssSources = [...DEFAULT_RSS_SOURCES];
+    this.saveRssSources();
+    console.log(`✅ RSS-Quellen auf ${DEFAULT_RSS_SOURCES.length} Standard-Quellen zurückgesetzt`);
+    toast.success(`RSS-Quellen zurückgesetzt - ${DEFAULT_RSS_SOURCES.length} Quellen geladen`);
+  }
+
   // Get all RSS sources
   public getRssSources(): RssSource[] {
     return [...this.rssSources];

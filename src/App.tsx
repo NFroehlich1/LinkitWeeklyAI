@@ -25,6 +25,7 @@ const App = () => {
               <Route path="/student-news" element={<StudentNews />} />
               <Route path="/archive-qa" element={<ArchiveQA />} />
               <Route path="/interactive-database" element={<InteractiveDatabase />} />
+              <Route path="/rss-manager" element={<RssFeedManager />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

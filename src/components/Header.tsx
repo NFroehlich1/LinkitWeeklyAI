@@ -19,8 +19,6 @@ const Header = () => {
     <header className="border-b border-white/20 bg-white/40 backdrop-blur-xl sticky top-0 z-50 shadow-lg shadow-black/5">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-          {/* Logo/Brand - Always clickable to home */}
           <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
               📰 {t('header.title')}
@@ -34,7 +32,6 @@ const Header = () => {
                   variant={location.pathname === item.to ? "default" : "ghost"}
                   className={`flex items-center gap-2 transition-all duration-200 ${
                     location.pathname === item.to 
-                      ? ""
                       ? "bg-blue-600 text-white shadow-md" 
                       : "hover:bg-white/60 hover:backdrop-blur-md hover:shadow-sm hover:border hover:border-white/30"
                   }`}
@@ -47,7 +44,6 @@ const Header = () => {
             <LanguageSwitcher />
           </nav>
 
-          {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             className="md:hidden hover:bg-white/60"
@@ -57,7 +53,6 @@ const Header = () => {
           </Button>
         </div>
 
-        {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <nav className="md:hidden mt-4 pb-4 border-t border-white/20 pt-4">
             <div className="flex flex-col space-y-2">
@@ -72,10 +67,13 @@ const Header = () => {
                     }`}
                   >
                     {item.icon}
-                    {item.title}
+                    {t(item.titleKey)}
                   </Button>
                 </Link>
               ))}
+              <div className="pt-2">
+                <LanguageSwitcher />
+              </div>
             </div>
           </nav>
         )}
@@ -84,4 +82,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default Header; 
