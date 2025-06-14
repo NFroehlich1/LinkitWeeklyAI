@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ReactMarkdown from 'react-markdown';
 import NewsletterArchiveService, { NewsletterArchiveEntry } from "@/services/NewsletterArchiveService";
 import { getCurrentWeek, getCurrentYear } from "@/utils/dateUtils";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Define a type for the newsletter
 type Newsletter = {
@@ -25,7 +25,7 @@ type Newsletter = {
 }
 
 const NewsletterManagement = () => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState<number | null>(null);
@@ -163,26 +163,26 @@ const NewsletterManagement = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>{t('management.title')}</CardTitle>
+        <CardTitle>{t('admin.newsletterManagement')}</CardTitle>
         <CardDescription>
-          {t('management.description')}
+          {t('admin.manageSettings')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3 w-full mb-4">
-            <TabsTrigger value="basic">{t('management.basic_settings')}</TabsTrigger>
-            <TabsTrigger value="content">{t('management.newsletter_selection')}</TabsTrigger>
-            <TabsTrigger value="preview">{t('management.preview')}</TabsTrigger>
+            <TabsTrigger value="basic">{t('admin.basicSettings')}</TabsTrigger>
+            <TabsTrigger value="content">{t('admin.newsletterSelection')}</TabsTrigger>
+            <TabsTrigger value="preview">{t('admin.preview')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="basic" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="subscriber-count">{t('management.subscribers')}</Label>
+              <Label htmlFor="subscriber-count">{t('admin.subscribers')}</Label>
               <div className="flex gap-2">
                 <Input
                   id="subscriber-count"
-                  value={subscriberCount !== null ? `${subscriberCount} ${t('management.confirmed_subscribers')}` : t('management.click_load')}
+                  value={subscriberCount !== null ? `${subscriberCount} ${t('admin.confirmedSubscribers')}` : t('admin.clickLoad')}
                   readOnly
                   className="flex-1"
                 />
@@ -191,13 +191,13 @@ const NewsletterManagement = () => {
                   onClick={loadSubscriberCount} 
                   disabled={isLoadingSubscribers}
                 >
-                  {isLoadingSubscribers ? t('management.loading') : t('management.load')}
+                  {isLoadingSubscribers ? t('admin.loading') : t('admin.load')}
                 </Button>
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="schedule-date">{t('management.send_time')}</Label>
+              <Label htmlFor="schedule-date">{t('admin.sendTime')}</Label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -213,7 +213,7 @@ const NewsletterManagement = () => {
             </div>
             
             <div className="space-y-2">
-                              <Label htmlFor="sender-name">{t('management.sender_name')}</Label>
+              <Label htmlFor="sender-name">{t('admin.senderName')}</Label>
               <div className="flex-1 relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -227,7 +227,7 @@ const NewsletterManagement = () => {
             </div>
             
             <div className="space-y-2">
-                              <Label htmlFor="sender-email">{t('management.sender_email')}</Label>
+              <Label htmlFor="sender-email">{t('admin.senderEmail')}</Label>
               <div className="flex-1 relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -244,7 +244,7 @@ const NewsletterManagement = () => {
           
           <TabsContent value="content" className="space-y-4">
             <div className="space-y-2">
-                              <Label htmlFor="email-subject">{t('management.subject')}</Label>
+              <Label htmlFor="email-subject">{t('admin.newsletterSubject')}</Label>
               <div className="flex-1 relative">
                 <Pencil className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -258,12 +258,12 @@ const NewsletterManagement = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="archive-selection">Newsletter aus Archiv auswählen</Label>
+              <Label htmlFor="archive-selection">{t('admin.selectFromArchive')}</Label>
               <div className="flex-1 relative">
                 <Archive className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Select value={selectedArchiveId} onValueChange={handleArchiveSelection}>
                   <SelectTrigger className="pl-9">
-                    <SelectValue placeholder={isLoadingArchive ? "Lade Archiv..." : "Newsletter auswählen"} />
+                    <SelectValue placeholder={isLoadingArchive ? t('admin.loadingArchive') : t('admin.selectNewsletter')} />
                   </SelectTrigger>
                   <SelectContent>
                     {archivedNewsletters.map((newsletter) => (
@@ -278,13 +278,13 @@ const NewsletterManagement = () => {
             
             {newsletterContent && (
               <div className="space-y-2">
-                <Label htmlFor="newsletter-content">{t('management.selected_content')}</Label>
+                <Label htmlFor="newsletter-content">{t('admin.selectedContent')}</Label>
                 <Textarea
                   id="newsletter-content"
                   value={newsletterContent}
                   onChange={(e) => setNewsletterContent(e.target.value)}
                   className="min-h-[300px] font-mono text-sm"
-                                      placeholder={t('management.content_placeholder')}
+                  placeholder={t('admin.contentPlaceholder')}
                 />
               </div>
             )}
@@ -295,7 +295,7 @@ const NewsletterManagement = () => {
               className="w-full mt-4"
               disabled={!newsletterContent}
             >
-                              {t('management.generate_preview')}
+              {t('admin.generatePreview')}
             </Button>
           </TabsContent>
           
@@ -304,7 +304,7 @@ const NewsletterManagement = () => {
               <div className="border rounded-md p-4">
                 <h3 className="text-lg font-medium mb-2">{subject}</h3>
                 <div className="text-sm text-muted-foreground mb-4">
-                  Von: {senderName} &lt;{senderEmail}&gt;
+                  {t('admin.from')} {senderName} &lt;{senderEmail}&gt;
                 </div>
                 <div className="newsletter-preview bg-white p-6 rounded-md border">
                   {previewHtml ? (
@@ -341,16 +341,16 @@ const NewsletterManagement = () => {
                       </ReactMarkdown>
                       <div className="mt-8 pt-6 border-t border-gray-200">
                         <p className="text-sm text-gray-500">
-                          Sie erhalten diesen Newsletter, weil Sie sich dafür angemeldet haben. 
+                          {t('admin.subscribeReceived')} 
                           <a href="#" className="text-gray-500 hover:text-gray-700 underline ml-1">
-                            Hier abmelden
+                            {t('admin.unsubscribeHere')}
                           </a>
                         </p>
                       </div>
                     </div>
                   ) : (
                     <p className="text-gray-500">
-                      {t('management.select_and_preview')}
+                      {t('admin.selectNewsletterAndGenerate')}
                     </p>
                   )}
                 </div>
@@ -366,7 +366,7 @@ const NewsletterManagement = () => {
           disabled={isSending || !newsletterContent}
         >
           <Send className="mr-2 h-4 w-4" />
-                        {isSending ? t('management.sending') : t('management.send_now')}
+          {isSending ? t('admin.sendingNewsletter') : t('admin.sendNewsletterNow')}
         </Button>
       </CardFooter>
     </Card>

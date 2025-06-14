@@ -14,7 +14,7 @@ import { Calendar, FileEdit, Mail, RefreshCw, TrendingUp, Archive, CheckCircle, 
 import NewsService from "@/services/NewsService";
 import NewsletterArchiveService from "@/services/NewsletterArchiveService";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface WeeklyDigestProps {
   digest: WeeklyDigestType;
@@ -23,7 +23,8 @@ interface WeeklyDigestProps {
 }
 
 const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
-  const { t, language } = useLanguage();
+  const { t } = useTranslation();
+  
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(digest.generatedContent || null);
   const [activeTab, setActiveTab] = useState<string>("news");
@@ -367,13 +368,9 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                   </CardTitle>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-gray-600 mt-1">
                     <span className="font-medium">{currentDigest.dateRange}</span>
-                    {selectedArticles ? (
+                    {selectedArticles && (
                       <span className="inline-flex px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                         {selectedArticles.length} {t('digest.selected_articles')}
-                      </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                        {t('digest.top_10')} {t('digest.automatically_selected')}
                       </span>
                     )}
                     {isSaving && (
@@ -410,10 +407,10 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     className="gap-2 bg-white hover:bg-green-50 border-green-200 text-green-700"
                   >
                     <Star className="h-4 w-4" />
-                    <span className="hidden sm:inline">
-                      {selectedArticles ? t('button.edit') + ' ' + t('selection.article') : t('button.edit') + ' ' + t('digest.top_10')}
+                    <span className="hidden sm:inline"
+                      {selectedArticles ? t('weeklyDigest.editArticles') : t('weeklyDigest.editTop10')}
                     </span>
-                    <span className="sm:hidden">{t('button.edit')}</span>
+                    <span className="sm:hidden">{t('general.edit')}</span>
                   </Button>
                   
                   <Button 
@@ -428,7 +425,7 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                       <Zap className="h-4 w-4" />
                     )}
                     <span className="hidden sm:inline">
-                      {isAutoGenerating ? "Generiert automatisch..." : "Auto-Newsletter"}
+                      {isAutoGenerating ? t('ui.generatingAuto') : t('ui.autoNewsletter')}
                     </span>
                     <span className="sm:hidden">
                       {isAutoGenerating ? "..." : "Auto"}
@@ -446,10 +443,10 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                       <Mail className="h-4 w-4" />
                     )}
                     <span className="hidden sm:inline">
-                      {isGenerating ? t('digest.generating') : generatedContent ? t('digest.regenerate') : t('digest.create_newsletter')}
+                      {isGenerating ? t('ui.generating') : generatedContent ? t('ui.regenerate') : t('ui.createNewsletter')}
                     </span>
                     <span className="sm:hidden">
-                      {isGenerating ? "..." : generatedContent ? "Neu" : "Erstellen"}
+                      {isGenerating ? "..." : generatedContent ? t('ui.regenerate') : t('general.create')}
                     </span>
                   </Button>
 
@@ -468,10 +465,10 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                         <Save className="h-4 w-4" />
                       )}
                       <span className="hidden sm:inline">
-                        {isSaving ? t('status.saving') : savedToArchive ? t('status.saved') : "Im Archiv speichern"}
+                        {isSaving ? t('weeklyDigest.saving') : savedToArchive ? t('weeklyDigest.saved') : t('weeklyDigest.saveToArchive')}
                       </span>
                       <span className="sm:hidden">
-                        {isSaving ? "..." : savedToArchive ? "✓" : t('status.save')}
+                        {isSaving ? "..." : savedToArchive ? "✓" : t('general.save')}
                       </span>
                     </Button>
                   )}
@@ -511,8 +508,8 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                   className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-primary"
                 >
                   <TrendingUp className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('digest.news_tab')}</span>
-                  <span className="sm:hidden">News</span>
+                  <span className="hidden sm:inline">{t('ui.news')}</span>
+                  <span className="sm:hidden">{t('ui.news')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="summary" 
@@ -520,22 +517,22 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                   className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-primary"
                 >
                   <Mail className="h-4 w-4" />
-                  {t('digest.newsletter_tab')}
+{t('ui.newsletter')}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="ask" 
                   className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-primary"
                 >
                   <MessageSquare className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('digest.questions_tab')}</span>
-                  <span className="sm:hidden">Q&A</span>
+                  <span className="hidden sm:inline">{t('ui.questions')}</span>
+                  <span className="sm:hidden">{t('ui.qa')}</span>
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="news" className="mt-0">
                 {isLoading ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-600">{t('status.articles_loading')}</p>
+                    <p className="text-gray-600">{t('ui.articlesLoading')}</p>
                   </div>
                 ) : displayArticles.length > 0 ? (
                   <div className="space-y-4">
@@ -543,12 +540,48 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                       <Star className="h-4 w-4 text-blue-500" />
                       <span className="hidden sm:inline">
                         {selectedArticles 
-                          ? `${selectedArticles.length} ${t('digest.selected_articles')}` 
+                          ? `${selectedArticles.length} ${t('ui.selectedArticles')}` 
                           : showAllArticles
-                            ? `${t('digest.all_articles')} ${displayArticles.length}`
-                            : `${t('digest.top_10')} ${displayArticles.length}`
+                            ? `${t('ui.allArticles')} ${displayArticles.length}`
+                            : `${t('ui.top10')} ${displayArticles.length} ${t('ui.topRelevantArticles')}`
                         }
                       </span>
+                      <span className="sm:hidden">
+                        {selectedArticles ? `${selectedArticles.length} ${t('ui.selected')}` : showAllArticles ? `${t('ui.allArticles')} ${displayArticles.length}` : `${t('ui.top10')} ${displayArticles.length}`}
+                      </span>
+                      
+                      {/* Toggle Buttons für Ansicht */}
+                      {!selectedArticles && (
+                        <div className="ml-auto flex gap-1">
+                          <Button
+                            variant={!showAllArticles ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setShowAllArticles(false)}
+                            className="text-xs h-7"
+                          >
+{t('ui.top10')}
+                          </Button>
+                          <Button
+                            variant={showAllArticles ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setShowAllArticles(true)}
+                            className="text-xs h-7"
+                          >
+{t('ui.allArticles')}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                      {displayArticles.map((item, index) => (
+                        <NewsCard 
+                          key={`${getArticleId(item)}-${index}`}
+                          item={item}
+                          onTitleImproved={handleTitleImproved}
+                          onDelete={handlePermanentDeleteArticle}
+                        />
+                      ))}
                     </div>
                     {displayArticles.map((article, index) => (
                       <NewsCard
@@ -560,8 +593,10 @@ const WeeklyDigest = ({ digest, apiKey, newsService }: WeeklyDigestProps) => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">{t('status.no_articles')}</p>
+                  <div className="text-center py-12">
+                    <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">{t('ui.noArticlesFound')}</p>
+                    <p className="text-sm text-gray-500 mt-2">{t('ui.tryReloadNews')}</p>
                   </div>
                 )}
               </TabsContent>

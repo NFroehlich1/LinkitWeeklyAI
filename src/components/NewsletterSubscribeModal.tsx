@@ -26,14 +26,19 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface NewsletterSubscribeModalProps {
   newsletterContent?: string;
 }
 
 const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModalProps) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
+  
+  // Form validation schema
+  const formSchema = z.object({
+    email: z.string().email(t('newsletter.emailValidation'))
+  });
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -65,12 +70,12 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
       if (checkError && checkError.code !== 'PGRST116') {
         // Error other than "no rows returned"
         console.error("Error checking subscriber:", checkError);
-        toast.error(t('newsletter.subscription_error'));
+        toast.error(t('newsletter.errorMessage'));
         return;
       }
 
       if (existingSubscriber) {
-        toast.info(t('newsletter.already_registered'));
+        toast.info(t('newsletter.alreadyRegistered'));
         setIsSuccess(true);
       } else {
         // Insert new subscriber
@@ -80,13 +85,13 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
 
         if (insertError) {
           console.error("Error adding subscriber:", insertError);
-          toast.error(t('newsletter.subscription_error'));
+          toast.error(t('newsletter.errorMessage'));
           return;
         }
 
         // Show success message
         setIsSuccess(true);
-        toast.success(t('newsletter.thank_you'));
+        toast.success(t('newsletter.successToast'));
       }
       
       // Reset success state after 3 seconds and close dialog
@@ -97,7 +102,7 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
       }, 3000);
     } catch (error) {
       console.error("Fehler beim Abonnieren:", error);
-      toast.error(t('newsletter.subscription_error'));
+      toast.error(t('newsletter.errorMessage'));
     } finally {
       setIsSubmitting(false);
     }
@@ -108,14 +113,14 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
       <DialogTrigger asChild>
         <Button variant="default" className="gap-2">
           <Mail className="h-4 w-4" />
-          {t('newsletter.subscribe')}
+{t('newsletter.subscribe')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('newsletter.subscribe_title')}</DialogTitle>
+          <DialogTitle>{t('newsletter.subscribeTitle')}</DialogTitle>
           <DialogDescription>
-            {t('newsletter.subscribe_description')}
+{t('newsletter.description')}
           </DialogDescription>
         </DialogHeader>
         
@@ -124,9 +129,9 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
             <div className="mx-auto rounded-full bg-green-100 p-3 w-fit mb-4">
               <Check className="h-6 w-6 text-green-600" />
             </div>
-            <h3 className="text-lg font-medium mb-2">{t('newsletter.subscription_successful')}</h3>
+            <h3 className="text-lg font-medium mb-2">{t('newsletter.successTitle')}</h3>
             <p className="text-muted-foreground">
-              {t('newsletter.check_email')}
+              {t('newsletter.confirmEmail')}
             </p>
           </div>
         ) : (
@@ -137,16 +142,16 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('newsletter.email_label')}</FormLabel>
+                    <FormLabel>{t('newsletter.emailLabel')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={t('newsletter.email_placeholder')} 
+                        placeholder={t('newsletter.emailPlaceholder')} 
                         type="email"
                         {...field} 
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('newsletter.email_description')}
+                      {t('newsletter.emailDescription')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -155,7 +160,7 @@ const NewsletterSubscribeModal = ({ newsletterContent }: NewsletterSubscribeModa
               
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? t('newsletter.subscribing') : t('newsletter.subscribe_button')}
+                  {isSubmitting ? t('newsletter.subscribing') : t('newsletter.subscribe')}
                 </Button>
               </DialogFooter>
             </form>
