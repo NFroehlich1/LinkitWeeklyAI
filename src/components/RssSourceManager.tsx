@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ import {
 import { RssSource } from "@/services/NewsService";
 import { Rss, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface RssSourceManagerProps {
   sources: RssSource[];
@@ -40,13 +40,14 @@ const RssSourceManager = ({
   onToggleSource,
   onRefresh,
 }: RssSourceManagerProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [newSourceUrl, setNewSourceUrl] = useState("");
   const [newSourceName, setNewSourceName] = useState("");
   
   const handleAddSource = () => {
     if (!newSourceUrl.trim()) {
-      toast.error("Bitte geben Sie eine URL ein");
+      toast.error(t('rss.pleaseEnterUrl'));
       return;
     }
     
@@ -75,10 +76,10 @@ const RssSourceManager = ({
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <Rss className="h-5 w-5 flex-shrink-0" />
-          <span className="truncate">RSS-Quellen</span>
+          <span className="truncate">{t('rss.rssSources')}</span>
         </CardTitle>
         <CardDescription className="text-sm sm:text-base">
-          RSS-Quellen verwalten und neue hinzufügen
+          {t('rss.manageAndAddSources')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4">
@@ -86,7 +87,7 @@ const RssSourceManager = ({
           <div className="text-center py-6 sm:py-8">
             <Rss className="h-8 w-8 sm:h-10 sm:w-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground text-sm sm:text-base">
-              Keine RSS-Quellen vorhanden. Fügen Sie eine hinzu.
+              {t('rss.noRssSourcesAddOne')}
             </p>
           </div>
         ) : (
@@ -115,7 +116,7 @@ const RssSourceManager = ({
                       htmlFor={`source-${index}`} 
                       className="text-sm font-medium cursor-pointer"
                     >
-                      {source.enabled ? "Aktiv" : "Inaktiv"}
+                      {source.enabled ? t('rss.active') : t('rss.inactive')}
                     </Label>
                   </div>
                   
@@ -126,7 +127,7 @@ const RssSourceManager = ({
                     className="gap-2 w-full sm:w-auto"
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span className="sm:hidden">Entfernen</span>
+                    <span className="sm:hidden">{t('rss.remove')}</span>
                   </Button>
                 </div>
               </div>
@@ -139,32 +140,32 @@ const RssSourceManager = ({
           <DialogTrigger asChild>
             <Button className="w-full gap-2" size="sm">
               <Plus className="h-4 w-4" />
-              RSS-Quelle hinzufügen
+              {t('rss.addRssSource')}
             </Button>
           </DialogTrigger>
           <DialogContent className="w-[95vw] max-w-md mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-lg sm:text-xl">RSS-Quelle hinzufügen</DialogTitle>
-                          <DialogDescription className="text-sm sm:text-base">
-              Fügen Sie jede beliebige RSS-Quelle hinzu. Die URL wird automatisch für bekannte Seiten optimiert.
-            </DialogDescription>
+              <DialogTitle className="text-lg sm:text-xl">{t('rss.addRssSource')}</DialogTitle>
+              <DialogDescription className="text-sm sm:text-base">
+                {t('rss.addAnyRssSource')}
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="url" className="text-sm font-medium">RSS-Feed URL</Label>
+                <Label htmlFor="url" className="text-sm font-medium">{t('rss.rssFeedUrl')}</Label>
                 <Input
                   id="url"
-                  placeholder="https://beispiel.de/feed"
+                  placeholder={t('rss.urlPlaceholder')}
                   value={newSourceUrl}
                   onChange={(e) => setNewSourceUrl(e.target.value)}
                   className="text-sm"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Name (optional)</Label>
+                <Label htmlFor="name" className="text-sm font-medium">{t('rss.nameOptional')}</Label>
                 <Input
                   id="name"
-                  placeholder="Quellen-Name"
+                  placeholder={t('rss.sourceNamePlaceholder')}
                   value={newSourceName}
                   onChange={(e) => setNewSourceName(e.target.value)}
                   className="text-sm"
@@ -177,13 +178,13 @@ const RssSourceManager = ({
                 onClick={() => setOpen(false)}
                 className="w-full sm:w-auto order-2 sm:order-1"
               >
-                Abbrechen
+                {t('general.cancel')}
               </Button>
               <Button 
                 onClick={handleAddSource}
                 className="w-full sm:w-auto order-1 sm:order-2"
               >
-                Hinzufügen
+                {t('rss.add')}
               </Button>
             </DialogFooter>
           </DialogContent>

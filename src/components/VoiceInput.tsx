@@ -91,7 +91,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
       recognition.onstart = () => {
         console.log("🎤 Voice recognition started");
         setIsListening(true);
-        toast.success("Spracherkennung aktiviert - sprechen Sie jetzt!");
+        toast.success("Voice recognition activated - speak now!");
       };
 
       recognition.onresult = (event) => {
@@ -124,19 +124,19 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         
         switch (event.error) {
           case 'no-speech':
-            toast.error("Keine Sprache erkannt. Versuchen Sie es erneut.");
+            toast.error("No speech detected. Please try again.");
             break;
           case 'audio-capture':
-            toast.error("Mikrofonzugriff verweigert oder nicht verfügbar.");
+            toast.error("Microphone access denied or unavailable.");
             break;
           case 'not-allowed':
-            toast.error("Mikrofonberechtigung verweigert. Bitte erlauben Sie den Mikrofonzugriff.");
+            toast.error("Microphone permission denied. Please allow microphone access.");
             break;
           case 'network':
-            toast.error("Netzwerkfehler bei der Spracherkennung.");
+            toast.error("Network error during speech recognition.");
             break;
           default:
-            toast.error(`Spracherkennungsfehler: ${event.error}`);
+            toast.error(`Speech recognition error: ${event.error}`);
         }
       };
 
@@ -170,7 +170,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
       recognitionRef.current.start();
     } catch (error) {
       console.error("Microphone access denied:", error);
-      toast.error("Mikrofonzugriff verweigert. Bitte erlauben Sie den Zugriff in Ihren Browser-Einstellungen.");
+      toast.error("Microphone access denied. Please allow access in your browser settings.");
     }
   };
 
@@ -187,7 +187,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         size="sm"
         disabled
         className={`${className} opacity-50`}
-        title="Spracherkennung wird in diesem Browser nicht unterstützt"
+        title="Speech recognition is not supported in this browser"
       >
         <MicOff className="h-4 w-4" />
       </Button>
@@ -202,17 +202,17 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         onClick={isListening ? stopListening : startListening}
         disabled={isDisabled}
         className={`${className} ${isListening ? 'animate-pulse' : ''}`}
-        title={isListening ? "Aufnahme stoppen" : "Spracheingabe starten"}
+        title={isListening ? "Stop recording" : "Start voice input"}
       >
         {isListening ? (
           <>
             <Square className="h-4 w-4 mr-1" />
-            Stopp
+            Stop
           </>
         ) : (
           <>
             <Mic className="h-4 w-4 mr-1" />
-            Sprechen
+            Speak
           </>
         )}
       </Button>

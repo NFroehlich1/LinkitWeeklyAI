@@ -64,10 +64,10 @@ const NewsletterArchiveQA = () => {
 
   // Static fallback questions
   const fallbackQuestions = [
-    "Welche wichtigen KI-Entwicklungen wurden 2024 berichtet?",
-    "Was wurde über ChatGPT und OpenAI geschrieben?",
-    "Welche neuen Machine Learning Tools wurden vorgestellt?",
-    "Gab es Berichte über ethische KI-Themen?"
+    "What important AI developments were reported in 2024?",
+    "What was written about ChatGPT and OpenAI?",
+    "What new Machine Learning Tools were introduced?",
+    "Were there reports about ethical AI topics?"
   ];
 
   useEffect(() => {
@@ -129,10 +129,10 @@ const NewsletterArchiveQA = () => {
     let score = 0;
     
     const relevantKeywords = [
-      'KI', 'AI', 'künstliche intelligenz', 'machine learning', 'deep learning',
+      'AI', 'AI', 'artificial intelligence', 'machine learning', 'deep learning',
       'chatgpt', 'openai', 'google', 'microsoft', 'meta', 'tesla', 'nvidia',
-      'startup', 'tech', 'innovation', 'digitalisierung', 'automation',
-      'robotik', 'algorithmus', 'daten', 'software', 'hardware'
+      'startup', 'tech', 'innovation', 'digitalization', 'automation',
+      'robotics', 'algorithm', 'data', 'software', 'hardware'
     ];
     
     const titleLower = article.title.toLowerCase();
@@ -180,46 +180,46 @@ const NewsletterArchiveQA = () => {
       if (title.includes('apple')) companies.add('Apple');
       
       // Detect technologies
-      if (title.includes('ki') || title.includes('ai') || title.includes('artificial intelligence')) technologies.add('KI/AI');
+      if (title.includes('ai') || title.includes('ai') || title.includes('artificial intelligence')) technologies.add('AI/AI');
       if (title.includes('machine learning') || title.includes('ml')) technologies.add('Machine Learning');
       if (title.includes('deep learning') || title.includes('neural')) technologies.add('Deep Learning');
       if (title.includes('llm') || title.includes('language model')) technologies.add('Large Language Models');
-      if (title.includes('roboter') || title.includes('robot')) technologies.add('Robotik');
+      if (title.includes('roboter') || title.includes('robot')) technologies.add('Robotics');
       if (title.includes('blockchain') || title.includes('crypto')) technologies.add('Blockchain');
       if (title.includes('quantum')) technologies.add('Quantum Computing');
       
       // Detect general topics
       if (title.includes('startup') || title.includes('funding') || title.includes('investment')) topics.add('Startup-Investments');
-      if (title.includes('ethik') || title.includes('regulation') || title.includes('gesetz')) topics.add('KI-Ethik und Regulierung');
-      if (title.includes('job') || title.includes('karriere') || title.includes('ausbildung')) topics.add('Tech-Karriere');
-      if (title.includes('sicherheit') || title.includes('security') || title.includes('privacy')) topics.add('IT-Sicherheit');
+      if (title.includes('ethik') || title.includes('regulation') || title.includes('gesetz')) topics.add('AI Ethics and Regulation');
+      if (title.includes('job') || title.includes('karriere') || title.includes('ausbildung')) topics.add('Tech-Career');
+      if (title.includes('sicherheit') || title.includes('security') || title.includes('privacy')) topics.add('IT Security');
     });
 
     // Generate questions based on current week's content
-    questions.push(`Welche wichtigen Tech-News gab es in KW ${currentWeek}/${currentYear}?`);
+    questions.push(`What important Tech-News happened in KW ${currentWeek}/${currentYear}?`);
 
     // Company-based questions
     Array.from(companies).slice(0, 2).forEach(company => {
-      questions.push(`Was wurde diese Woche über ${company} berichtet?`);
+      questions.push(`What was reported this week about ${company}?`);
     });
 
     // Technology-based questions
     Array.from(technologies).slice(0, 2).forEach(tech => {
-      questions.push(`Welche Entwicklungen gab es bei ${tech} in den letzten Newslettern?`);
+      questions.push(`What developments happened in ${tech} in previous newsletters?`);
     });
 
     // Topic-based questions
     Array.from(topics).slice(0, 2).forEach(topic => {
-      questions.push(`Was wurde zu ${topic} in vergangenen Newslettern diskutiert?`);
+      questions.push(`What was discussed about ${topic} in previous newsletters?`);
     });
 
     // Add some general comparison questions if we have diverse content
     if (companies.size > 1) {
-      questions.push(`Wie unterscheiden sich die KI-Strategien der großen Tech-Unternehmen?`);
+      questions.push(`How do the AI strategies of large tech companies differ?`);
     }
     
     if (articles.length >= 5) {
-      questions.push(`Welche Trends zeichnen sich aus den aktuellen Top-Artikeln ab?`);
+      questions.push(`What trends are emerging from the current top articles?`);
     }
 
     // Ensure we have at least 4 questions, fallback to static ones if needed
@@ -288,12 +288,12 @@ const NewsletterArchiveQA = () => {
                         }, 2000);
                       }
                       toast({
-                        title: "Newsletter gefunden",
+                        title: "Newsletter found",
                         description: `"${newsletter.title}" - ${newsletter.year}/KW${newsletter.week_number}`
                       });
                     }
                   }}
-                  title={newsletter ? `Zeige Newsletter: ${newsletter.title}` : 'Newsletter anzeigen'}
+                  title={newsletter ? `Show Newsletter: ${newsletter.title}` : 'Show Newsletter'}
                   {...props}
                 >
                   {children}
@@ -309,7 +309,7 @@ const NewsletterArchiveQA = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline decoration-blue-600/30 hover:decoration-blue-800 transition-colors"
-                title={`Öffne ${href} in neuem Tab`}
+                title={`Open ${href} in new tab`}
                 {...props}
               >
                 {children}
@@ -327,8 +327,8 @@ const NewsletterArchiveQA = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       toast({
-        title: "Fehler",
-        description: "Bitte geben Sie einen Suchbegriff ein",
+        title: "Error",
+        description: "Please enter a search term",
         variant: "destructive"
       });
       return;
@@ -368,21 +368,21 @@ const NewsletterArchiveQA = () => {
       
       if (searchData.count === 0) {
         toast({
-          title: "Keine Ergebnisse",
-          description: "Keine Newsletter gefunden, die Ihrer Suche entsprechen"
+          title: "No results found",
+          description: "No newsletters found that match your search"
         });
       } else {
         toast({
-          title: "Suche erfolgreich",
-          description: `${searchData.count} Newsletter gefunden`
+          title: "Search successful",
+          description: `${searchData.count} newsletters found`
         });
       }
 
     } catch (error) {
       console.error('Search failed:', error);
       toast({
-        title: "Fehler",
-        description: "Suche fehlgeschlagen: " + (error as Error).message,
+        title: "Error",
+        description: "Search failed: " + (error as Error).message,
         variant: "destructive"
       });
     } finally {
@@ -393,8 +393,8 @@ const NewsletterArchiveQA = () => {
   const handleQA = async () => {
     if (!qaQuery.trim()) {
       toast({
-        title: "Fehler",
-        description: "Bitte stellen Sie eine Frage",
+        title: "Error",
+        description: "Please ask a question",
         variant: "destructive"
       });
       return;
@@ -447,7 +447,7 @@ const NewsletterArchiveQA = () => {
           action: 'qa-with-newsletter',
           data: {
             question: qaQuery,
-            newsletter: newsletterContent || `Newsletter-Archive durchsucht. ${newsletterList.length} relevante Newsletter gefunden.`
+            newsletter: newsletterContent || `Newsletter-Archive searched. ${newsletterList.length} relevant newsletters found.`
           }
         }
       });
@@ -455,8 +455,8 @@ const NewsletterArchiveQA = () => {
       if (error) {
         console.error('Q&A error:', error);
         toast({
-          title: "Fehler",
-          description: "Fehler beim Beantworten der Frage: " + error.message,
+          title: "Error",
+          description: "Error answering the question: " + error.message,
           variant: "destructive"
         });
         return;
@@ -466,22 +466,22 @@ const NewsletterArchiveQA = () => {
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: data.content || data.answer || 'Keine Antwort erhalten',
+        content: data.content || data.answer || 'No answer received',
         timestamp: new Date(),
         relatedNewsletters: newsletterList.slice(0, 5)
       };
       setChatHistory(prev => [...prev, assistantMessage]);
 
       toast({
-        title: "Antwort generiert",
-        description: `Antwort basierend auf ${newsletterList.length} Newsletter(n) generiert`
+        title: "Answer generated",
+        description: `Answer based on ${newsletterList.length} Newsletter(s) generated`
       });
 
     } catch (error) {
       console.error('Q&A failed:', error);
       toast({
-        title: "Fehler",
-        description: "Fehler beim Beantworten: " + (error as Error).message,
+        title: "Error",
+        description: "Error answering: " + (error as Error).message,
         variant: "destructive"
       });
     } finally {
@@ -493,8 +493,8 @@ const NewsletterArchiveQA = () => {
   const clearChat = () => {
     setChatHistory([]);
     toast({
-      title: "Chat gelöscht",
-      description: "Chat-Verlauf gelöscht"
+      title: "Chat cleared",
+      description: "Chat history cleared"
     });
   };
 
@@ -502,8 +502,8 @@ const NewsletterArchiveQA = () => {
     setSelectedYear('');
     setSelectedWeek('');
     toast({
-      title: "Filter zurückgesetzt",
-      description: "Filter zurückgesetzt"
+      title: "Filters reset",
+      description: "Filters reset"
     });
   };
 
@@ -525,14 +525,14 @@ const NewsletterArchiveQA = () => {
     if (searchQuery.trim()) {
       setSearchQuery(prev => prev + " " + transcript);
       toast({
-        title: "Spracheingabe hinzugefügt",
-        description: "Spracheingabe zur Suche hinzugefügt"
+        title: "Voice input added",
+        description: "Voice input added to search"
       });
     } else {
       setSearchQuery(transcript);
       toast({
-        title: "Suchbegriff erkannt",
-        description: "Suchbegriff per Sprache erfasst"
+        title: "Search term recognized",
+        description: "Search term captured via voice"
       });
     }
   };
@@ -543,14 +543,14 @@ const NewsletterArchiveQA = () => {
     if (qaQuery.trim()) {
       setQaQuery(prev => prev + " " + transcript);
       toast({
-        title: "Spracheingabe hinzugefügt",
-        description: "Spracheingabe zur Frage hinzugefügt"
+        title: "Voice input added",
+        description: "Voice input added to question"
       });
     } else {
       setQaQuery(transcript);
       toast({
-        title: "Frage erkannt",
-        description: "Frage per Sprache erfasst"
+        title: "Question recognized",
+        description: "Question captured via voice"
       });
     }
   };
@@ -565,10 +565,10 @@ const NewsletterArchiveQA = () => {
             </div>
             <div>
               <CardTitle className="text-xl font-bold text-gray-900">
-                Newsletter-Archiv Q&A System
+                Newsletter-Archive Q&A System
               </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
-                Durchsuchen Sie alle Newsletter-Archive und stellen Sie Fragen zu vergangenen Inhalten
+                Search all Newsletter-Archives and ask questions about past content
               </p>
             </div>
           </div>
@@ -580,14 +580,14 @@ const NewsletterArchiveQA = () => {
             <div className="flex flex-wrap gap-4 items-end">
               <div className="flex-1 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Jahr filtern:
+                  Filter by year:
                 </label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Alle Jahre" />
+                    <SelectValue placeholder="All years" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Jahre</SelectItem>
+                    <SelectItem value="">All years</SelectItem>
                     {yearOptions.map(year => (
                       <SelectItem key={year} value={year.toString()}>
                         {year}
@@ -599,14 +599,14 @@ const NewsletterArchiveQA = () => {
 
               <div className="flex-1 min-w-[200px]">
                 <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Kalenderwoche filtern:
+                  Filter by calendar week:
                 </label>
                 <Select value={selectedWeek} onValueChange={setSelectedWeek}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Alle Wochen" />
+                    <SelectValue placeholder="All weeks" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Wochen</SelectItem>
+                    <SelectItem value="">All weeks</SelectItem>
                     {weekOptions.map(week => (
                       <SelectItem key={week} value={week.toString()}>
                         KW {week}
@@ -617,7 +617,7 @@ const NewsletterArchiveQA = () => {
               </div>
 
               <Button variant="outline" onClick={clearFilters}>
-                Filter zurücksetzen
+                Reset filters
               </Button>
             </div>
 
@@ -626,7 +626,7 @@ const NewsletterArchiveQA = () => {
                 {selectedYear && (
                   <Badge variant="secondary">
                     <Calendar className="h-3 w-3 mr-1" />
-                    Jahr: {selectedYear}
+                    Year: {selectedYear}
                   </Badge>
                 )}
                 {selectedWeek && (
@@ -644,7 +644,7 @@ const NewsletterArchiveQA = () => {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="search" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
-                Suche
+                Search
               </TabsTrigger>
               <TabsTrigger value="qa" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
@@ -656,7 +656,7 @@ const NewsletterArchiveQA = () => {
             <TabsContent value="search" className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Durchsuchen Sie Newsletter-Archive (z.B. 'OpenAI', 'KI-Trends', 'Machine Learning')..."
+                  placeholder="Search Newsletter-Archive (e.g. 'OpenAI', 'AI Trends', 'Machine Learning')..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => handleKeyPress(e, 'search')}
@@ -668,14 +668,14 @@ const NewsletterArchiveQA = () => {
                   ) : (
                     <Search className="h-4 w-4" />
                   )}
-                  {isSearching ? 'Suche...' : 'Suchen'}
+                  {isSearching ? 'Searching...' : 'Search'}
                 </Button>
                 
                 {/* Voice Input for Search */}
                 <VoiceInput
                   onTranscript={handleSearchVoiceTranscript}
                   isDisabled={isSearching}
-                  language="de-DE"
+                  language="en-US"
                 />
               </div>
 
@@ -684,10 +684,10 @@ const NewsletterArchiveQA = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">
-                      Suchergebnisse ({searchResults.count})
+                      Search results ({searchResults.count})
                     </h3>
                     <Badge variant="outline">
-                      Suche: "{searchResults.query}"
+                      Search: "{searchResults.query}"
                     </Badge>
                   </div>
 
@@ -704,7 +704,7 @@ const NewsletterArchiveQA = () => {
                                 {newsletter.year}/KW{newsletter.week_number}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
-                                {newsletter.article_count} Artikel
+                                {newsletter.article_count} Articles
                               </Badge>
                             </div>
                           </div>
@@ -730,9 +730,9 @@ const NewsletterArchiveQA = () => {
               {chatHistory.length > 0 && (
                 <div className="space-y-4 max-h-96 overflow-y-auto border rounded-lg p-4 bg-gray-50/50">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Chat-Verlauf</h3>
+                    <h3 className="font-semibold text-gray-900">Chat history</h3>
                     <Button variant="outline" size="sm" onClick={clearChat}>
-                      Chat löschen
+                      Clear chat
                     </Button>
                   </div>
 
@@ -755,7 +755,7 @@ const NewsletterArchiveQA = () => {
                               {message.relatedNewsletters && message.relatedNewsletters.length > 0 && (
                                 <div className="mt-3 pt-3 border-t border-gray-200">
                                   <p className="text-xs font-medium text-gray-600 mb-2">
-                                    Referenzierte Newsletter:
+                                    Referenced newsletters:
                                   </p>
                                   <div className="flex flex-wrap gap-1">
                                     {message.relatedNewsletters.map((nl) => (
@@ -783,10 +783,10 @@ const NewsletterArchiveQA = () => {
               {/* Q&A Input with Voice Support */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-gray-700">
-                  Stellen Sie eine Frage zu den Newsletter-Archiven:
+                  Ask a question about the Newsletter-Archives:
                 </label>
                 <Textarea
-                  placeholder="Z.B. 'Welche KI-Trends wurden in den letzten Monaten diskutiert?' oder nutzen Sie die Spracheingabe..."
+                  placeholder="e.g. 'What AI trends were discussed in the last months?' or use voice input..."
                   value={qaQuery}
                   onChange={(e) => setQaQuery(e.target.value)}
                   onKeyPress={(e) => handleKeyPress(e, 'qa')}
@@ -806,14 +806,14 @@ const NewsletterArchiveQA = () => {
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    {isAsking ? 'Analysiere Archive...' : 'Frage stellen'}
+                    {isAsking ? 'Analyzing archive...' : 'Ask question'}
                   </Button>
                   
                   {/* Voice Input for Q&A */}
                   <VoiceInput
                     onTranscript={handleQAVoiceTranscript}
                     isDisabled={isAsking}
-                    language="de-DE"
+                    language="en-US"
                   />
                 </div>
 
@@ -823,7 +823,7 @@ const NewsletterArchiveQA = () => {
                       <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-blue-600" />
                         <p className="text-sm text-blue-800 font-medium">
-                          {isLoadingQuestions ? 'Lade aktuelle Fragevorschläge...' : 'Aktuelle Fragevorschläge:'}
+                          {isLoadingQuestions ? 'Loading current question suggestions...' : 'Current question suggestions:'}
                         </p>
                       </div>
                       <Button 
@@ -862,7 +862,7 @@ const NewsletterArchiveQA = () => {
                         {currentWeekArticles.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">
-                              📊 Basierend auf {currentWeekArticles.length} Top-Artikeln der KW {getCurrentWeek()}/{getCurrentYear()}
+                              📊 Based on {currentWeekArticles.length} Top articles of KW {getCurrentWeek()}/{getCurrentYear()}
                             </p>
                             <div className="flex flex-wrap gap-1 mb-2">
                               {currentWeekArticles.slice(0, 3).map((article, index) => (
@@ -872,10 +872,10 @@ const NewsletterArchiveQA = () => {
                               ))}
                             </div>
                             
-                            {/* Debug Info - zeigt erkannte Keywords */}
+                            {/* Debug Info - shows recognized keywords */}
                             {process.env.NODE_ENV === 'development' && (
                               <details className="text-xs text-blue-600">
-                                <summary className="cursor-pointer">🔍 Debug: Erkannte Themen</summary>
+                                <summary className="cursor-pointer">🔍 Debug: Recognized topics</summary>
                                 <div className="mt-1 space-y-1">
                                   {(() => {
                                     const companies = new Set<string>();
@@ -887,19 +887,19 @@ const NewsletterArchiveQA = () => {
                                       if (title.includes('google') || title.includes('gemini')) companies.add('Google');
                                       if (title.includes('microsoft')) companies.add('Microsoft');
                                       if (title.includes('meta')) companies.add('Meta');
-                                      if (title.includes('ki') || title.includes('ai')) technologies.add('KI/AI');
+                                      if (title.includes('ai') || title.includes('ai')) technologies.add('AI/AI');
                                       if (title.includes('machine learning')) technologies.add('ML');
                                     });
                                     
                                     return (
                                       <>
                                         {companies.size > 0 && (
-                                          <div>🏢 Unternehmen: {Array.from(companies).join(', ')}</div>
+                                          <div>🏢 Companies: {Array.from(companies).join(', ')}</div>
                                         )}
                                         {technologies.size > 0 && (
-                                          <div>⚡ Technologien: {Array.from(technologies).join(', ')}</div>
+                                          <div>⚡ Technologies: {Array.from(technologies).join(', ')}</div>
                                         )}
-                                        <div>📅 Letztes Update: {new Date().toLocaleTimeString()}</div>
+                                        <div>📅 Last update: {new Date().toLocaleTimeString()}</div>
                                       </>
                                     );
                                   })()}
@@ -911,7 +911,7 @@ const NewsletterArchiveQA = () => {
                         
                         {currentWeekArticles.length === 0 && (
                           <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                            ⚠️ Keine aktuellen Artikel verfügbar - verwende Standard-Fragen
+                            ⚠️ No current articles available - use standard questions
                           </div>
                         )}
                       </div>

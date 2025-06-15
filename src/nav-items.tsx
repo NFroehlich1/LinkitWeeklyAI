@@ -14,13 +14,13 @@ export const navItems = [
     icon: <Mail className="h-4 w-4" />,
   },
   {
-    title: "KI-Datenbank",
+    title: "AI Database",
     titleKey: "nav.database",
     to: "/interactive-database",
     icon: <Database className="h-4 w-4" />,
   },
   {
-    title: "RSS Verwaltung",
+    title: "RSS Management",
     titleKey: "nav.rss",
     to: "/rss-manager",
     icon: <Settings className="h-4 w-4" />,

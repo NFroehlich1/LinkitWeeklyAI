@@ -43,7 +43,7 @@ async function testSupabaseConnection() {
 }
 
 async function testEdgeFunction(functionName) {
-    const testText = "Hallo, das ist ein Test für die Text-zu-Sprache Funktion.";
+    const testText = "Hello, this is a test for the text-to-speech function.";
     
     try {
         console.log(`   Testing ${functionName}...`);

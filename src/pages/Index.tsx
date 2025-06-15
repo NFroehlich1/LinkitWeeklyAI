@@ -353,8 +353,7 @@ const Index = () => {
             🤖 {t('index.title')}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-            Automatische KI- und Data Science News Aggregation mit intelligenter Filterung 
-            für relevante Newsletter-Inhalte
+            {t('index.subtitle')}
           </p>
           
           {/* Navigation Buttons */}

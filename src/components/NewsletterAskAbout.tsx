@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from 'react-markdown';
 import VoiceInput from './VoiceInput';
 import ElevenLabsTTS from './ElevenLabsTTS';
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface NewsletterAskAboutProps {
   articles: RssItem[];
@@ -25,6 +26,7 @@ interface ChatMessage {
 }
 
 const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemini' }: NewsletterAskAboutProps) => {
+  const { t, language } = useTranslation();
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -57,10 +59,10 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
     
     if (articles.length === 0) {
       setDynamicQuestions([
-        "Was sind die wichtigsten KI-Trends diese Woche?",
-        "Welche neuen Technologien werden diskutiert?",
-        "Welche Unternehmen sind besonders aktiv?",
-        "Welche Entwicklungen sind für Studierende relevant?"
+        t('whatAreMainAITrends'),
+        t('whatNewTechnologies'),
+        t('whichCompaniesActive'),
+        t('whatRelevantForStudents')
       ]);
       return;
     }
@@ -85,12 +87,12 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
       });
       
       // Topics detection (expanded)
-      if (text.includes('startup') || text.includes('funding') || text.includes('investment') || text.includes('finanzierung')) topics.add('Startups & Investitionen');
-      if (text.includes('ethik') || text.includes('regulation') || text.includes('gesetz') || text.includes('datenschutz')) topics.add('KI-Ethik & Regulierung');
-      if (text.includes('job') || text.includes('karriere') || text.includes('ausbildung') || text.includes('studium')) topics.add('Karriere & Bildung');
-      if (text.includes('sicherheit') || text.includes('security') || text.includes('privacy') || text.includes('cyber')) topics.add('Sicherheit');
-      if (text.includes('gesundheit') || text.includes('medizin') || text.includes('health') || text.includes('medical')) topics.add('Medizin & Gesundheit');
-      if (text.includes('energie') || text.includes('klima') || text.includes('nachhaltigkeit') || text.includes('environment')) topics.add('Umwelt & Energie');
+      if (text.includes('startup') || text.includes('funding') || text.includes('investment') || text.includes('finanzierung')) topics.add('Startups & Investments');
+      if (text.includes('ethik') || text.includes('regulation') || text.includes('gesetz') || text.includes('datenschutz')) topics.add('AI Ethics & Regulation');
+      if (text.includes('job') || text.includes('karriere') || text.includes('ausbildung') || text.includes('studium')) topics.add('Career & Education');
+      if (text.includes('sicherheit') || text.includes('security') || text.includes('privacy') || text.includes('cyber')) topics.add('Security');
+      if (text.includes('gesundheit') || text.includes('medizin') || text.includes('health') || text.includes('medical')) topics.add('Medicine & Health');
+      if (text.includes('energie') || text.includes('klima') || text.includes('nachhaltigkeit') || text.includes('environment')) topics.add('Environment & Energy');
       
       // Extract key terms
       const words = text.split(/\s+/);
@@ -101,111 +103,51 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
       });
     });
 
-    // Question templates for variation
-    const questionTemplates = {
-      company: [
-        "Was wird über {company} berichtet?",
-        "Welche Entwicklungen zeigt {company}?",
-        "Wie positioniert sich {company} im Markt?",
-        "Was sind die neuesten Nachrichten zu {company}?",
-        "Welche Strategie verfolgt {company}?"
-      ],
-      comparison: [
-        "Wie unterscheiden sich die Ansätze von {comp1} und {comp2}?",
-        "Was sind die Gemeinsamkeiten zwischen {comp1} und {comp2}?",
-        "Wer ist führend: {comp1} oder {comp2}?",
-        "Welche Konkurrenz besteht zwischen {comp1} und {comp2}?"
-      ],
-      technology: [
-        "Welche Entwicklungen gibt es bei {tech}?",
-        "Wie wird {tech} eingesetzt?",
-        "Was sind die Vorteile von {tech}?",
-        "Welche Herausforderungen gibt es bei {tech}?",
-        "Wie verändert {tech} die Branche?"
-      ],
-      topic: [
-        "Was wird zu {topic} berichtet?",
-        "Welche Trends zeigen sich bei {topic}?",
-        "Wie entwickelt sich {topic}?",
-        "Welche Auswirkungen hat {topic}?",
-        "Was sollte man über {topic} wissen?"
-      ],
-      general: [
-        "Was sind die wichtigsten Erkenntnisse aus den Artikeln?",
-        "Welche praktischen Tipps kann ich ableiten?",
-        "Welche Trends lassen sich erkennen?",
-        "Was ist besonders relevant für Studierende?",
-        "Welche Artikel sind am interessantesten?",
-        "Fasse die wichtigsten Punkte zusammen",
-        "Welche Entwicklungen sind überraschend?",
-        "Was sollte ich als Nächstes lesen?",
-        "Welche langfristigen Auswirkungen sind zu erwarten?",
-        "Wie beeinflussen diese Entwicklungen den Arbeitsmarkt?",
-        "Welche Geschäftsmodelle entstehen?",
-        "Was bedeuten diese Trends für die Zukunft?"
-      ],
-      newsletter: [
-        "Was sind die Kernaussagen dieses Newsletters?",
-        "Welche Artikel werden besonders hervorgehoben?",
-        "Wie hängen die verschiedenen Artikel zusammen?",
-        "Was ist das übergreifende Thema?",
-        "Welche Schlüsselerkenntnisse vermittelt der Newsletter?"
-      ]
-    };
-
     let questions: string[] = [];
 
     // Add newsletter-specific questions if content is available
     if (newsletterContent) {
-      const newsletterQuestions = questionTemplates.newsletter;
-      questions.push(newsletterQuestions[Math.floor(Math.random() * newsletterQuestions.length)]);
+      questions.push(t('whatMainPointsNewsletter'));
     }
 
     // Add company-specific questions
     const companyArray = Array.from(companies);
     if (companyArray.length > 0) {
       const randomCompany = companyArray[Math.floor(Math.random() * companyArray.length)];
-      const template = questionTemplates.company[Math.floor(Math.random() * questionTemplates.company.length)];
-      questions.push(template.replace('{company}', randomCompany));
-
-      // Add comparison question if multiple companies
-      if (companyArray.length > 1) {
-        const shuffled = [...companyArray].sort(() => 0.5 - Math.random());
-        const template = questionTemplates.comparison[Math.floor(Math.random() * questionTemplates.comparison.length)];
-        questions.push(template.replace('{comp1}', shuffled[0]).replace('{comp2}', shuffled[1]));
-      }
+      questions.push(`${t('whatReportedAbout')} ${randomCompany}?`);
     }
 
     // Add technology questions
     const techArray = Array.from(technologies);
     if (techArray.length > 0) {
       const randomTech = techArray[Math.floor(Math.random() * techArray.length)];
-      const template = questionTemplates.technology[Math.floor(Math.random() * questionTemplates.technology.length)];
-      questions.push(template.replace('{tech}', randomTech));
+      questions.push(`${t('whatDevelopmentsIn')} ${randomTech}?`);
     }
 
     // Add topic questions
     const topicArray = Array.from(topics);
     if (topicArray.length > 0) {
       const randomTopic = topicArray[Math.floor(Math.random() * topicArray.length)];
-      const template = questionTemplates.topic[Math.floor(Math.random() * questionTemplates.topic.length)];
-      questions.push(template.replace('{topic}', randomTopic));
+      questions.push(`${t('whatReportedAbout')} ${randomTopic}?`);
     }
 
-    // Always add some general questions (randomly selected)
-    const generalQuestions = [...questionTemplates.general].sort(() => 0.5 - Math.random()).slice(0, 3);
-    questions.push(...generalQuestions);
+    // Always add some general questions
+    const generalQuestions = [
+      t('whatMainInsights'),
+      t('whatPracticalTips'),
+      t('whatTrendsVisible'),
+      t('whatRelevantForStudents'),
+      t('whichMostInteresting'),
+      t('summarizeMainPoints')
+    ];
+    
+    questions.push(...generalQuestions.sort(() => 0.5 - Math.random()).slice(0, 3));
 
     // Shuffle and limit to 6 questions
     const finalQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, 6);
 
-    console.log("✨ Generated dynamic questions:", finalQuestions);
-    console.log("🏢 Detected companies:", Array.from(companies));
-    console.log("🔬 Detected technologies:", Array.from(technologies));
-    console.log("📊 Detected topics:", Array.from(topics));
-    
+    console.log("✨ Generated questions:", finalQuestions);
     setDynamicQuestions(finalQuestions);
-    toast.success("Neue Fragevorschläge generiert!");
   };
 
   const getWeekNumber = (date: Date): number => {
@@ -216,7 +158,7 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
 
   const handleAskQuestion = async () => {
     if (!question.trim()) {
-      toast.error("Bitte geben Sie eine Frage ein");
+      toast.error("Please enter a question");
       return;
     }
 
@@ -249,32 +191,32 @@ const NewsletterAskAbout = ({ articles, newsletterContent, selectedModel = 'gemi
       console.log("Prepared articles context:", articlesContext.length);
 
       // Create enhanced prompt that includes newsletter content
-      let contextualPrompt = `Beantworte die folgende Frage basierend auf dem kompletten Newsletter-Inhalt und den zugehörigen Artikeln: "${question}"\n\n`;
+      let contextualPrompt = `Answer the following question based on the complete newsletter content and the related articles: "${question}"\n\n`;
       
       if (newsletterContent) {
-        contextualPrompt += `NEWSLETTER-INHALT:\n${newsletterContent}\n\n`;
-        contextualPrompt += `Zusätzlich sind hier die ursprünglichen Artikel, auf denen der Newsletter basiert:\n\n`;
+        contextualPrompt += `NEWSLETTER-CONTENT:\n${newsletterContent}\n\n`;
+        contextualPrompt += `Additionally, here are the original articles on which the newsletter is based:\n\n`;
       } else {
-        contextualPrompt += `Basiere deine Antwort auf den folgenden Artikeln:\n\n`;
+        contextualPrompt += `Base your answer on the following articles:\n\n`;
       }
       
-      contextualPrompt += `ARTIKEL-DETAILS:\n`;
+      contextualPrompt += `ARTICLE-DETAILS:\n`;
       articlesContext.forEach((article, index) => {
-        contextualPrompt += `Artikel ${index + 1}: ${article.title}\n`;
-        contextualPrompt += `   Quelle: ${article.sourceName}\n`;
+        contextualPrompt += `Article ${index + 1}: ${article.title}\n`;
+        contextualPrompt += `   Source: ${article.sourceName}\n`;
         contextualPrompt += `   Link: ${article.link}\n`;
-        contextualPrompt += `   Beschreibung: ${article.description}\n`;
+        contextualPrompt += `   Description: ${article.description}\n`;
         if (article.content && article.content !== article.description) {
-          contextualPrompt += `   Inhalt: ${article.content.substring(0, 300)}...\n`;
+          contextualPrompt += `   Content: ${article.content.substring(0, 300)}...\n`;
         }
         contextualPrompt += `\n`;
       });
       
-      contextualPrompt += `\nGib eine detaillierte, hilfreiche Antwort auf Deutsch. ${newsletterContent ? 'Beziehe dich sowohl auf den Newsletter-Inhalt als auch auf die ursprünglichen Artikel.' : 'Beziehe dich konkret auf die relevanten Artikel und deren Inhalte.'} 
+      contextualPrompt += `\nProvide a detailed, helpful answer in English. ${newsletterContent ? 'Take into account both the newsletter content and the original articles.' : 'Take into account the relevant articles and their contents.'} 
 
-WICHTIG: Wenn du auf spezifische Artikel verweist, verwende IMMER das Format "Artikel X" (z.B. "Artikel 1", "Artikel 2"), damit diese automatisch zu klickbaren Links werden. Beispiel: "Wie in Artikel 3 beschrieben..." oder "Artikel 1 und Artikel 5 zeigen...".
+IMPORTANT: When you refer to specific articles, ALWAYS use the format "Article X" (e.g. "Article 1", "Article 2"), so that they become clickable links. For example: "As described in Article 3..." or "Article 1 and Article 5 show...".
 
-Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
+Name specific articles or sections from the newsletter as sources.`;
 
       // Use qa-with-newsletter action for proper Q&A functionality
       const functionName = selectedModel === 'gemini' ? 'gemini-ai' : 'mistral-ai';
@@ -292,13 +234,13 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
       if (error) {
         console.error("Supabase function error:", error);
-        toast.error("Fehler bei der Verbindung zum KI-Service");
+        toast.error("Error connecting to the AI service");
         return;
       }
 
       if (data?.error) {
         console.error(`${selectedModel} API Error:`, data.error);
-        toast.error("Fehler beim Generieren der Antwort: " + data.error);
+        toast.error("Error generating answer: " + data.error);
         return;
       }
 
@@ -309,7 +251,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
         answer = data.answer;
       } else {
         console.error("No content in response:", data);
-        toast.error("Keine Antwort erhalten");
+        toast.error("No answer received");
         return;
       }
 
@@ -325,7 +267,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
     } catch (error) {
       console.error("Error asking question:", error);
-      toast.error("Fehler beim Stellen der Frage: " + (error as Error).message);
+      toast.error("Error asking question: " + (error as Error).message);
     } finally {
       setIsLoading(false);
       setQuestion("");
@@ -334,7 +276,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
 
   const clearChat = () => {
     setChatHistory([]);
-    toast.success("Chat-Verlauf gelöscht");
+    toast.success("Chat history cleared");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -351,10 +293,10 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
     // Append to existing question or set as new question
     if (question.trim()) {
       setQuestion(prev => prev + " " + transcript);
-      toast.success("Spracheingabe hinzugefügt!");
+      toast.success(t('voiceInputAdded'));
     } else {
       setQuestion(transcript);
-      toast.success("Frage per Sprache erfasst!");
+      toast.success(t('questionCapturedViaVoice'));
     }
   };
 
@@ -371,20 +313,20 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
       
       if (latestAssistantMessage) {
         setLastReadMessageId(latestAssistantMessage.id);
-        toast.success("Automatische Sprachausgabe aktiviert! Letzte Antwort wird vorgelesen.");
+        toast.success(t('autoSpeechActivatedWithLatest'));
       } else {
-        toast.success("Automatische Sprachausgabe aktiviert!");
+        toast.success(t('autoSpeechActivated'));
       }
     } else {
       setLastReadMessageId(null);
-      toast.success("Automatische Sprachausgabe deaktiviert");
+      toast.success(t('autoSpeechDeactivated'));
     }
   };
 
   // Function to convert article references to clickable links
   const processArticleLinks = (content: string): string => {
-    // Pattern to match article references like "Artikel 1", "Artikel 2", etc.
-    const articlePattern = /\b(?:Artikel|Article)\s+(\d+)\b/gi;
+    // Pattern to match article references like "Article 1", "Article 2", etc.
+    const articlePattern = /\b(?:Article|Article)\s+(\d+)\b/gi;
     
     return content.replace(articlePattern, (match, articleNumber) => {
       const index = parseInt(articleNumber) - 1; // Convert to 0-based index
@@ -416,7 +358,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline decoration-blue-600/30 hover:decoration-blue-800 transition-colors"
-              title={`Öffne ${href} in neuem Tab`}
+              title={t('openInNewTab')}
               {...props}
             >
               {children}
@@ -440,10 +382,10 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
             </div>
             <div>
               <CardTitle className="text-lg font-bold text-gray-900">
-                Fragen zum Newsletter
+                {t('questionsAboutTheNewsletter')}
               </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
-                Stellen Sie Fragen zu den {articles.length} Artikeln {newsletterContent ? 'und dem Newsletter-Inhalt' : 'in diesem Newsletter'}
+                {t('askQuestionsAboutArticles')} {articles.length} {t('articles')} {newsletterContent ? t('andNewsletterContent') : t('inThisNewsletter')}
               </p>
             </div>
           </div>
@@ -454,23 +396,23 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
               size="sm" 
               onClick={toggleAutoSpeech}
               className={autoSpeechEnabled ? "bg-green-600 hover:bg-green-700" : ""}
-              title={autoSpeechEnabled ? "Automatische Sprachausgabe deaktivieren" : "Automatische Sprachausgabe aktivieren"}
+              title={autoSpeechEnabled ? t('automaticSpeechOutputDeactivation') : t('automaticSpeechOutputActivation')}
             >
               {autoSpeechEnabled ? (
                 <>
                   <Volume2 className="h-4 w-4 mr-1" />
-                  Auto-TTS AN
+                  {t('autoTTSON')}
                 </>
               ) : (
                 <>
                   <VolumeX className="h-4 w-4 mr-1" />
-                  Auto-TTS AUS
+                  {t('autoTTSOFF')}
                 </>
               )}
             </Button>
             {chatHistory.length > 0 && (
               <Button variant="outline" size="sm" onClick={clearChat}>
-                Chat löschen
+                {t('clearChat')}
               </Button>
             )}
           </div>
@@ -528,7 +470,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
                             {autoSpeechEnabled && message.id === lastReadMessageId && (
                               <div className="text-xs text-green-600 flex items-center gap-1">
                                 <Volume2 className="h-3 w-3" />
-                                Auto
+                                {t('auto')}
                               </div>
                             )}
                           </div>
@@ -553,24 +495,24 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="outline" className="text-xs">
-              {articles.length} Artikel verfügbar
+              {articles.length} {t('articlesAvailable')}
             </Badge>
             {newsletterContent && (
               <Badge variant="outline" className="text-xs">
-                Newsletter-Inhalt verfügbar
+                {t('newsletterContentAvailable')}
               </Badge>
             )}
           </div>
 
           <div className="space-y-2">
             <label htmlFor="question" className="text-sm font-medium text-gray-700">
-              Ihre Frage:
+              {t('yourQuestion')}
             </label>
             <Textarea
               id="question"
               placeholder={newsletterContent 
-                ? "Z.B. 'Welche KI-Trends werden im Newsletter diskutiert?' oder nutzen Sie die Spracheingabe..."
-                : "Z.B. 'Welche KI-Trends werden in den Artikeln diskutiert?' oder nutzen Sie die Spracheingabe..."
+                ? t('exampleNewsletterQuestion')
+                : t('exampleArticlesQuestion')
               }
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -592,14 +534,14 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              {isLoading ? "Analysiere..." : "Frage stellen"}
+              {isLoading ? t('analyzing') : t('askQuestion')}
             </Button>
             
             {/* Voice Input Button */}
             <VoiceInput
               onTranscript={handleVoiceTranscript}
               isDisabled={isLoading}
-              language="de-DE"
+              language={language === 'de' ? 'de-DE' : 'en-US'}
             />
           </div>
         </div>
@@ -610,7 +552,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="h-4 w-4 text-blue-600" />
               <p className="text-sm font-medium text-gray-700">
-                Intelligente Fragevorschläge:
+                {t('intelligentQuestionSuggestions')}
               </p>
               <Button 
                 variant="ghost" 
@@ -642,7 +584,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
             {articles.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="text-xs text-blue-700 mb-2">
-                  📊 Basierend auf {articles.length} Artikeln {newsletterContent ? 'und Newsletter-Inhalt' : 'dieses Newsletters'}
+                  📊 {t('basedOnArticles')} {articles.length} {t('articles')} {newsletterContent ? t('andNewsletterContent') : t('thisNewsletter')}
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {articles.slice(0, 3).map((article, index) => (
@@ -652,7 +594,7 @@ Nenne spezifische Artikel oder Abschnitte aus dem Newsletter als Quelle.`;
                   ))}
                   {articles.length > 3 && (
                     <span className="text-xs text-blue-600">
-                      +{articles.length - 3} weitere
+                      +{articles.length - 3} {t('more')}
                     </span>
                   )}
                 </div>

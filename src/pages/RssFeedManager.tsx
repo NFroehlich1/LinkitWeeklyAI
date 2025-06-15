@@ -31,8 +31,10 @@ import { Link } from "react-router-dom";
 import NewsService from "@/services/NewsService";
 import { RssSource } from "@/types/newsTypes";
 import Header from "@/components/Header";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const RssFeedManager = () => {
+  const { t } = useTranslation();
   const [newsService] = useState(() => new NewsService());
   const [sources, setSources] = useState<RssSource[]>([]);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
@@ -56,7 +58,7 @@ const RssFeedManager = () => {
 
   const handleAddSource = () => {
     if (!newSourceUrl.trim()) {
-      toast.error("Bitte geben Sie eine URL ein");
+      toast.error(t('rss.pleaseEnterUrl'));
       return;
     }
     
@@ -65,14 +67,14 @@ const RssFeedManager = () => {
       setNewSourceName("");
       setAddDialogOpen(false);
       loadSources();
-      toast.success("RSS-Quelle erfolgreich hinzugefügt");
+      toast.success(t('rss.sourceAddedSuccessfully'));
     }
   };
 
   const handleRemoveSource = (url: string, name: string) => {
     if (newsService.removeRssSource(url)) {
       loadSources();
-      toast.success(`"${name}" wurde entfernt`);
+      toast.success(`"${name}" ${t('rss.wasRemoved')}`);
     }
   };
 
@@ -85,11 +87,11 @@ const RssFeedManager = () => {
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
     try {
-      toast.info("Teste alle RSS-Quellen...");
+      toast.info(t('rss.testingAllSources'));
       await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success("Alle RSS-Quellen wurden getestet");
+      toast.success(t('rss.allSourcesTested'));
     } catch (error) {
-      toast.error("Fehler beim Testen der RSS-Quellen");
+      toast.error(t('rss.errorTestingSources'));
     } finally {
       setIsRefreshing(false);
     }
@@ -102,9 +104,9 @@ const RssFeedManager = () => {
 
   const getStatusBadge = (source: RssSource) => {
     if (source.enabled) {
-      return <Badge variant="default" className="bg-green-100 text-green-800">Aktiv</Badge>;
+      return <Badge variant="default" className="bg-green-100 text-green-800">{t('rss.active')}</Badge>;
     } else {
-      return <Badge variant="secondary">Inaktiv</Badge>;
+      return <Badge variant="secondary">{t('rss.inactive')}</Badge>;
     }
   };
 
@@ -120,22 +122,22 @@ const RssFeedManager = () => {
                 <Link to="/">
                   <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 hover:border-blue-300">
                     <ArrowLeft className="h-4 w-4" />
-                    Zurück zur Hauptseite
+                    {t('rss.backToMain')}
                   </Button>
                 </Link>
                 <Link to="/">
                   <Button variant="ghost" size="sm" className="gap-2 hover:bg-blue-50">
                     <Home className="h-4 w-4" />
-                    Home
+                    {t('nav.home')}
                   </Button>
                 </Link>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
                 <Settings className="h-6 w-6 sm:h-8 sm:w-8" />
-                RSS Feed Verwaltung
+                {t('rss.title')}
               </h1>
               <p className="text-muted-foreground mt-1">
-                Verwalten Sie alle Ihre RSS-Quellen an einem Ort
+                {t('rss.subtitle')}
               </p>
             </div>
             
@@ -146,7 +148,7 @@ const RssFeedManager = () => {
                 className="gap-2"
               >
                 {showOnlyActive ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                {showOnlyActive ? "Alle anzeigen" : "Nur aktive"}
+                {showOnlyActive ? t('rss.showAll') : t('rss.showOnlyActive')}
               </Button>
               
               <Button
@@ -156,7 +158,7 @@ const RssFeedManager = () => {
                 className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Alle testen
+                {t('rss.testAll')}
               </Button>
               
               <Button
@@ -165,7 +167,7 @@ const RssFeedManager = () => {
                 className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
               >
                 <Settings className="h-4 w-4" />
-                Standard-Quellen laden
+                {t('rss.loadDefaultSources')}
               </Button>
             </div>
           </div>
@@ -176,7 +178,7 @@ const RssFeedManager = () => {
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">{sources.length}</div>
-                  <div className="text-sm text-muted-foreground">Gesamt Quellen</div>
+                  <div className="text-sm text-muted-foreground">{t('rss.totalSources')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -187,7 +189,7 @@ const RssFeedManager = () => {
                   <div className="text-2xl font-bold text-green-600">
                     {sources.filter(s => s.enabled).length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Aktive Quellen</div>
+                  <div className="text-sm text-muted-foreground">{t('rss.activeSources')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -198,7 +200,7 @@ const RssFeedManager = () => {
                   <div className="text-2xl font-bold text-orange-600">
                     {sources.filter(s => !s.enabled).length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Inaktive Quellen</div>
+                  <div className="text-sm text-muted-foreground">{t('rss.inactiveSources')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -209,7 +211,7 @@ const RssFeedManager = () => {
             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <Filter className="h-4 w-4 text-blue-600" />
               <span className="text-sm text-blue-700 font-medium">
-                Nur aktive RSS-Quellen werden angezeigt ({filteredSources.length} von {sources.length})
+                {t('rss.onlyActiveShown')} ({filteredSources.length} {t('rss.of')} {sources.length})
               </span>
             </div>
           )}
@@ -220,10 +222,10 @@ const RssFeedManager = () => {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Rss className="h-5 w-5" />
-                  Meine RSS-Quellen ({filteredSources.length})
+                  {t('rss.myRssSources')} ({filteredSources.length})
                 </CardTitle>
                 <CardDescription>
-                  Alle Ihre konfigurierten RSS-Feeds im Überblick
+                  {t('rss.allConfiguredFeeds')}
                 </CardDescription>
               </div>
               
@@ -231,31 +233,31 @@ const RssFeedManager = () => {
                 <DialogTrigger asChild>
                   <Button className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Neue Quelle
+                    {t('rss.newSource')}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="w-[95vw] max-w-md mx-auto">
                   <DialogHeader>
-                    <DialogTitle>RSS-Quelle hinzufügen</DialogTitle>
+                    <DialogTitle>{t('rss.addRssSource')}</DialogTitle>
                     <DialogDescription>
-                      Fügen Sie eine neue RSS-Quelle hinzu. Die URL wird automatisch optimiert.
+                      {t('rss.addSourceDescription')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="url">RSS-Feed URL</Label>
+                      <Label htmlFor="url">{t('rss.rssFeedUrl')}</Label>
                       <Input
                         id="url"
-                        placeholder="https://beispiel.de/feed"
+                        placeholder={t('rss.urlPlaceholder')}
                         value={newSourceUrl}
                         onChange={(e) => setNewSourceUrl(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="name">Name (optional)</Label>
+                      <Label htmlFor="name">{t('rss.nameOptional')}</Label>
                       <Input
                         id="name"
-                        placeholder="Quellen-Name"
+                        placeholder={t('rss.sourceNamePlaceholder')}
                         value={newSourceName}
                         onChange={(e) => setNewSourceName(e.target.value)}
                       />
@@ -267,10 +269,10 @@ const RssFeedManager = () => {
                       variant="outline"
                       onClick={() => setAddDialogOpen(false)}
                     >
-                      Abbrechen
+                      {t('general.cancel')}
                     </Button>
                     <Button onClick={handleAddSource}>
-                      Hinzufügen
+                      {t('rss.add')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -282,12 +284,12 @@ const RssFeedManager = () => {
                 <div className="text-center py-8">
                   <Rss className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground text-lg font-medium mb-2">
-                    {showOnlyActive ? "Keine aktiven RSS-Quellen" : "Keine RSS-Quellen vorhanden"}
+                    {showOnlyActive ? t('rss.noActiveRssSources') : t('rss.noRssSourcesAvailable')}
                   </p>
                   <p className="text-muted-foreground mb-4">
                     {showOnlyActive 
-                      ? "Aktivieren Sie mindestens eine RSS-Quelle oder zeigen Sie alle an."
-                      : "Fügen Sie Ihre erste RSS-Quelle hinzu."
+                      ? t('rss.activateAtLeastOne')
+                      : t('rss.addYourFirstSource')
                     }
                   </p>
                   {showOnlyActive && (
@@ -297,7 +299,7 @@ const RssFeedManager = () => {
                       className="gap-2"
                     >
                       <Eye className="h-4 w-4" />
-                      Alle RSS-Quellen anzeigen
+                      {t('rss.showAllRssSources')}
                     </Button>
                   )}
                 </div>
@@ -325,7 +327,7 @@ const RssFeedManager = () => {
                           
                           {source.lastFetched && (
                             <p className="text-xs text-muted-foreground">
-                              Zuletzt abgerufen: {new Date(source.lastFetched).toLocaleString('de-DE')}
+                              {t('rss.lastFetched')}: {new Date(source.lastFetched).toLocaleString()}
                             </p>
                           )}
                         </div>
@@ -342,7 +344,7 @@ const RssFeedManager = () => {
                               htmlFor={`source-${index}`} 
                               className="text-sm cursor-pointer"
                             >
-                              {source.enabled ? "Aktiv" : "Inaktiv"}
+                              {source.enabled ? t('rss.active') : t('rss.inactive')}
                             </Label>
                           </div>
                           
@@ -354,24 +356,23 @@ const RssFeedManager = () => {
                                 className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4" />
-                                <span className="hidden sm:inline">Entfernen</span>
+                                <span className="hidden sm:inline">{t('rss.remove')}</span>
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>RSS-Quelle entfernen</AlertDialogTitle>
+                                <AlertDialogTitle>{t('rss.removeRssSource')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Sind Sie sicher, dass Sie "{source.name}" entfernen möchten? 
-                                  Diese Aktion kann nicht rückgängig gemacht werden.
+                                  {t('rss.removeConfirmation')} "{source.name}" {t('rss.removeConfirmationEnd')}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogCancel>{t('general.cancel')}</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleRemoveSource(source.url, source.name)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
-                                  Entfernen
+                                  {t('rss.remove')}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

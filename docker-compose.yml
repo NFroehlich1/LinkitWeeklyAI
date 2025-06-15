@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Supabase Local Development Stack
+  supabase:
+    image: supabase/postgres:15.1.1.39
+    container_name: linkit-supabase-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+    ports:
+      - "54322:5432"
+    volumes:
+      - supabase-db:/var/lib/postgresql/data
+    profiles:
+      - dev
+      - supabase
+
+  # Development environment (Frontend)
+  app-dev:
+    build:
+      context: .
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_SUPABASE_URL=http://localhost:54321
+      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+    depends_on:
+      - supabase
+    stdin_open: true
+    tty: true
+    profiles:
+      - dev
+
+  # Production environment
+  app-prod:
+    build:
+      context: .
+      target: production
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    profiles:
+      - prod
+
+volumes:
+  supabase-db:
+    driver: local
+
+networks:
+  default:
+    name: linkit-weekly-ai 
