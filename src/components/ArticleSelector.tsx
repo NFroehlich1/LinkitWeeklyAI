@@ -4,6 +4,7 @@ import { RssItem } from "@/services/NewsService";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/contexts/TranslationContext";
 import {
   Table,
   TableBody,
@@ -24,6 +25,7 @@ interface ArticleSelectorProps {
 
 const ArticleSelector = ({ articles, onSubmit, onCancel }: ArticleSelectorProps) => {
   const [selectedArticles, setSelectedArticles] = useState<RssItem[]>([]);
+  const { t } = useTranslation();
   
   const toggleArticle = (article: RssItem) => {
     if (selectedArticles.some(item => item.link === article.link)) {
@@ -142,7 +144,7 @@ const ArticleSelector = ({ articles, onSubmit, onCancel }: ArticleSelectorProps)
           
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={onCancel}>
-              Abbrechen
+              {t('general.cancel')}
             </Button>
             <Button 
               onClick={handleSubmit}
