@@ -56,6 +56,9 @@ class NewsService {
   public setPreferredAIModel(model: 'gemini' | 'mistral'): void {
     console.log(`=== SETTING PREFERRED AI MODEL TO: ${model.toUpperCase()} ===`);
     this.preferredAIModel = model;
+    // Update the DecoderService preferred provider to match
+    this.decoderService.setPreferredProvider(model);
+    console.log(`✅ Updated both NewsService and DecoderService to use ${model}`);
   }
 
   // Get preferred AI model
@@ -335,13 +338,20 @@ class NewsService {
   // Enhanced newsletter generation method - uses Supabase Edge Function
   public async generateNewsletterSummary(digest: WeeklyDigest, selectedArticles?: RssItem[], linkedInPage?: string): Promise<string> {
     console.log("=== NEWS SERVICE: GENERATE NEWSLETTER SUMMARY VIA SUPABASE ===");
+    console.log(`🤖 Using preferred AI model: ${this.preferredAIModel}`);
     
     try {
       // Use selected articles or all available articles
       const articlesToUse = selectedArticles || digest.items;
       
       console.log("Generating enhanced newsletter summary via Supabase...");
-      const summary = await this.decoderService.generateSummary(digest, articlesToUse, linkedInPage);
+      // Pass the preferred model as forceProvider to ensure correct model is used
+      const summary = await this.decoderService.generateSummary(
+        digest, 
+        articlesToUse, 
+        linkedInPage, 
+        this.preferredAIModel  // Force use of the selected model
+      );
       
       // Mark articles as processed if they were successfully used for newsletter generation
       if (summary && articlesToUse.length > 0) {
