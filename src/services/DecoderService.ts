@@ -24,6 +24,11 @@ class DecoderService {
     return this.preferredProvider;
   }
 
+  // Get RSS2JSON API key
+  public getRss2JsonApiKey(): string {
+    return this.rss2JsonApiKey;
+  }
+
   // Updated API key info method to include both providers
   public getApiKeyInfo(): string {
     return "LLM API keys stored securely in Supabase (Gemini & Mistral)";
@@ -169,24 +174,52 @@ class DecoderService {
     }
   }
 
-  // Enhanced generateArticleSummary with provider support
+  // Alias method for backward compatibility - calls generateDetailedSummary
+  public async generateSummary(
+    digest: WeeklyDigest, 
+    selectedArticles?: RssItem[], 
+    linkedInPage?: string,
+    forceProvider?: LLMProvider
+  ): Promise<string> {
+    return this.generateDetailedSummary(digest, selectedArticles, linkedInPage, forceProvider);
+  }
+
+  // Enhanced generateArticleSummary with provider support - supports both RssItem and title/content parameters
+  public async generateArticleSummary(article: RssItem): Promise<string>;
+  public async generateArticleSummary(title: string, content: string, forceProvider?: LLMProvider): Promise<string>;
   public async generateArticleSummary(
-    title: string, 
-    content: string,
+    titleOrArticle: string | RssItem, 
+    content?: string,
     forceProvider?: LLMProvider
   ): Promise<string> {
     console.log("=== GENERATING ARTICLE SUMMARY WITH LLM PROVIDERS ===");
+
+    let title: string;
+    let articleContent: string;
+    
+    // Handle both signatures: generateArticleSummary(article) and generateArticleSummary(title, content)
+    if (typeof titleOrArticle === 'object') {
+      // Called with RssItem object
+      const article = titleOrArticle as RssItem;
+      title = article.title;
+      articleContent = article.content || article.description || '';
+      forceProvider = content as LLMProvider; // Second parameter becomes forceProvider in this case
+    } else {
+      // Called with separate title and content
+      title = titleOrArticle as string;
+      articleContent = content || '';
+    }
 
     const targetProvider = forceProvider || this.preferredProvider;
     
     if (targetProvider === 'auto') {
       // Try Gemini first, then Mistral
-      const result = await this.tryGenerateArticleSummary('gemini', title, content);
+      const result = await this.tryGenerateArticleSummary('gemini', title, articleContent);
       if (result.success) {
         return result.content;
       }
       
-      const mistralResult = await this.tryGenerateArticleSummary('mistral', title, content);
+      const mistralResult = await this.tryGenerateArticleSummary('mistral', title, articleContent);
       if (mistralResult.success) {
         return mistralResult.content;
       }
@@ -194,14 +227,14 @@ class DecoderService {
       throw new Error("Beide LLM-Provider haben fehlgeschlagen");
     } else {
       // Try specific provider with fallback
-      const result = await this.tryGenerateArticleSummary(targetProvider, title, content);
+      const result = await this.tryGenerateArticleSummary(targetProvider, title, articleContent);
       if (result.success) {
         return result.content;
       }
       
       // Try fallback
       const fallbackProvider = targetProvider === 'gemini' ? 'mistral' : 'gemini';
-      const fallbackResult = await this.tryGenerateArticleSummary(fallbackProvider, title, content);
+      const fallbackResult = await this.tryGenerateArticleSummary(fallbackProvider, title, articleContent);
       if (fallbackResult.success) {
         return fallbackResult.content;
       }

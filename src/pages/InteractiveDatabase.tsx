@@ -14,6 +14,8 @@ import Header from '@/components/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/contexts/TranslationContext';
 
+type LLMModel = 'gemini' | 'mistral';
+
 // Spezifische Cluster Definition für die interaktive Datenbank
 const AI_CLUSTERS = {
   "Modellentwicklung": {
@@ -121,6 +123,7 @@ const InteractiveDatabase = () => {
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [activeTab, setActiveTab] = useState('all');
   const [error, setError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<LLMModel>('gemini');
 
   console.log("🚀 InteractiveDatabase component rendered with state:", {
     isLoading,
@@ -133,6 +136,12 @@ const InteractiveDatabase = () => {
     console.log("🚀 InteractiveDatabase component mounted");
     loadArticles();
   }, []);
+
+  // Update AI model preference when selectedModel changes
+  useEffect(() => {
+    console.log(`🤖 InteractiveDatabase: Updating AI model preference to ${selectedModel}`);
+    newsService.setPreferredAIModel(selectedModel);
+  }, [selectedModel, newsService]);
 
   const loadArticles = async () => {
     console.log("📋 Starting loadArticles...");
@@ -525,6 +534,16 @@ const InteractiveDatabase = () => {
               </SelectContent>
             </Select>
 
+            <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as LLMModel)}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('index.selectModel')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gemini">Gemini</SelectItem>
+                <SelectItem value="mistral">Mistral</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
               <SelectTrigger>
                 <SelectValue />
@@ -652,6 +671,7 @@ const InteractiveDatabase = () => {
                 <NewsCard 
                   item={article}
                   isLoading={false}
+                  selectedModel={selectedModel}
                 />
                 {/* Cluster Badge */}
                 {article.cluster && (
