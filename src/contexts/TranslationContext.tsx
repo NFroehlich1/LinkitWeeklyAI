@@ -284,6 +284,14 @@ const translations = {
     'general.create': 'Erstellen',
     'general.week': 'KW',
 
+    // Admin Login
+    'admin.password': 'Administrator-Passwort',
+    'admin.passwordPlaceholder': 'Geben Sie das Administrator-Passwort ein',
+    'admin.login': 'Anmelden',
+    'admin.checking': 'Prüfe...',
+    'admin.modeActivated': 'Administrator-Modus aktiviert',
+    'admin.wrongPassword': 'Falsches Passwort',
+
     // Newsletter Questions Component
     'questionsAboutTheNewsletter': 'Fragen zum Newsletter',
     'askQuestionsAboutArticles': 'Stellen Sie Fragen zu den',
@@ -614,6 +622,14 @@ const translations = {
     'general.edit': 'Edit',
     'general.create': 'Create',
     'general.week': 'Week',
+
+    // Admin Login
+    'admin.password': 'Administrator Password',
+    'admin.passwordPlaceholder': 'Enter the administrator password',
+    'admin.login': 'Login',
+    'admin.checking': 'Checking...',
+    'admin.modeActivated': 'Administrator mode activated',
+    'admin.wrongPassword': 'Wrong password',
 
     // Newsletter Questions Component
     'questionsAboutTheNewsletter': 'Questions about the Newsletter',

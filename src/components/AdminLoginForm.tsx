@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface AdminLoginFormProps {
   onCancel: () => void;
@@ -14,6 +15,7 @@ interface AdminLoginFormProps {
 const AdminLoginForm = ({ onCancel, onSuccessfulLogin }: AdminLoginFormProps) => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation();
   
   // The admin password - hardcoded for simplicity
   const ADMIN_PASSWORD = "linkit20kit25";
@@ -25,9 +27,9 @@ const AdminLoginForm = ({ onCancel, onSuccessfulLogin }: AdminLoginFormProps) =>
     // Simple password check
     if (password === ADMIN_PASSWORD) {
       onSuccessfulLogin();
-      toast.success("Administrator-Modus aktiviert");
+      toast.success(t('admin.modeActivated'));
     } else {
-      toast.error("Falsches Passwort");
+      toast.error(t('admin.wrongPassword'));
     }
     
     setPassword("");
@@ -37,7 +39,7 @@ const AdminLoginForm = ({ onCancel, onSuccessfulLogin }: AdminLoginFormProps) =>
   return (
     <form onSubmit={handleAdminLogin} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="admin-password">Administrator-Passwort</Label>
+        <Label htmlFor="admin-password">{t('admin.password')}</Label>
         <div className="relative">
           <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -46,7 +48,7 @@ const AdminLoginForm = ({ onCancel, onSuccessfulLogin }: AdminLoginFormProps) =>
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="pl-9"
-            placeholder="Geben Sie das Administrator-Passwort ein"
+            placeholder={t('admin.passwordPlaceholder')}
             autoFocus
             disabled={isSubmitting}
           />
@@ -60,14 +62,14 @@ const AdminLoginForm = ({ onCancel, onSuccessfulLogin }: AdminLoginFormProps) =>
           onClick={onCancel}
           disabled={isSubmitting}
         >
-          Abbrechen
+          {t('general.cancel')}
         </Button>
         <Button 
           type="submit" 
           className="flex-1"
           disabled={isSubmitting || !password.trim()}
         >
-          {isSubmitting ? "Prüfe..." : "Anmelden"}
+          {isSubmitting ? t('admin.checking') : t('admin.login')}
         </Button>
       </div>
     </form>
