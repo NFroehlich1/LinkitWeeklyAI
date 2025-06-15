@@ -94,12 +94,14 @@ Context available: ${context ? 'Yes - newsletter/article content available' : 'N
 
 Instructions:
 1. If the question can be fully answered with the provided context, respond with: NO_SEARCH_NEEDED
-2. If web search would help get current information, respond with: SEARCH_NEEDED followed by up to 3 search queries, one per line starting with "QUERY:"
+2. If web search would help get current information, respond with: SEARCH_NEEDED followed by ONE search query starting with "QUERY:"
 
 Examples:
-- "What are the latest AI developments?" → SEARCH_NEEDED\nQUERY: latest AI developments 2024\nQUERY: artificial intelligence news today
+- "What are the latest AI developments?" → SEARCH_NEEDED\nQUERY: latest AI developments 2024
 - "What does this newsletter say about OpenAI?" → NO_SEARCH_NEEDED (if context available)
-- "What's happening with ChatGPT today?" → SEARCH_NEEDED\nQUERY: ChatGPT news today\nQUERY: OpenAI latest updates
+- "What's happening with ChatGPT today?" → SEARCH_NEEDED\nQUERY: ChatGPT news today
+
+Note: Only provide ONE search query to avoid rate limiting issues with the search API.
 
 Response:`;
 
@@ -137,7 +139,7 @@ Response:`;
           .split('\n')
           .filter((line: string) => line.startsWith('QUERY:'))
           .map((line: string) => line.replace('QUERY:', '').trim())
-          .slice(0, 3);
+          .slice(0, 1); // Only take the first query to avoid rate limiting
 
         return {
           needsSearch: true,
@@ -166,13 +168,19 @@ Response:`;
    */
   async performSearch(queries: string[], maxResults: number = 5): Promise<SearchResponse | null> {
     try {
-      console.log('🔍 Performing web search for queries:', queries);
+      // To avoid rate limiting, only use the first query
+      const limitedQueries = queries.slice(0, 1);
+      if (queries.length > 1) {
+        console.log(`⚠️ Rate limiting protection: Using only first query of ${queries.length} provided`);
+        console.log('🔍 Ignored queries:', queries.slice(1));
+      }
+      console.log('🔍 Performing web search for queries:', limitedQueries);
       
       const { data, error } = await supabase.functions.invoke('aci-brave-search', {
         body: {
           action: 'search',
           data: {
-            queries,
+            queries: limitedQueries,
             maxResults
           }
         }

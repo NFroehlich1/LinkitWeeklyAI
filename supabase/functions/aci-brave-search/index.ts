@@ -28,6 +28,7 @@ interface SearchResponse {
   results: {
     query: string;
     results: SearchResult[];
+    count: number;
     error?: string;
   }[];
   totalResults: number;
@@ -244,87 +245,177 @@ async function performWebSearch(apiKey: string, linkedAccountOwnerId: string, da
   }
 
   try {
-    console.log('🔍 Performing web searches for queries:', queries);
+    console.log('🔍 Performing web search for queries:', queries);
     console.log('📊 Max results per query:', maxResults);
     
-    // Perform searches in parallel
-    const searchPromises = queries.map(async (query: string) => {
-      try {
-        console.log(`🔍 Searching for: "${query}"`);
+    // To avoid rate limiting, we'll only search for the first query
+    // This prevents multiple simultaneous API calls to ACI.dev
+    const primaryQuery = queries[0];
+    console.log(`🎯 Using primary query only to avoid rate limits: "${primaryQuery}"`);
+    
+    if (queries.length > 1) {
+      console.log(`⚠️ Ignoring ${queries.length - 1} additional queries to prevent rate limiting:`, queries.slice(1));
+    }
+    
+    // Process only the first query to avoid rate limiting
+    const query = primaryQuery.replace(/^["']|["']$/g, ''); // Remove surrounding quotes
+    console.log(`🔍 Searching for: "${query}"`);
+    
+    const requestBody = {
+      function_name: 'BRAVE_SEARCH__WEB_SEARCH',
+      function_arguments: {
+        query: { q: query }
+      },
+      linked_account_owner_id: linkedAccountOwnerId
+    };
+    
+    console.log('📤 ACI API Request:', {
+      url: 'https://api.aci.dev/functions/execute',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
+        'Content-Type': 'application/json'
+      },
+      body: requestBody
+    });
+    
+    const searchResponse = await fetch('https://api.aci.dev/functions/execute', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log(`📡 ACI API Response Status: ${searchResponse.status}`);
+    
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error(`❌ Search API error for "${query}":`, errorText);
+      console.error(`❌ Response status: ${searchResponse.status}`);
+      console.error(`❌ Response headers:`, searchResponse.headers);
+      
+      // Try alternative function names if 404
+      if (searchResponse.status === 404) {
+        console.log('🔄 Trying alternative function names...');
         
-        const searchResponse = await fetch('https://api.aci.dev/functions/execute', {
+        // Try lowercase version
+        const altRequestBody = {
+          ...requestBody,
+          function_name: 'brave_search__web_search'
+        };
+        
+        console.log('📤 Trying alternative function name:', altRequestBody.function_name);
+        
+        const altResponse = await fetch('https://api.aci.dev/functions/execute', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            function_name: 'BRAVE_SEARCH__WEB_SEARCH',
-            function_arguments: {
-              query: { q: query }
-            },
-            linked_account_owner_id: linkedAccountOwnerId
-          }),
+          body: JSON.stringify(altRequestBody),
         });
-
-        if (!searchResponse.ok) {
-          const errorText = await searchResponse.text();
-          console.error(`❌ Search API error for "${query}":`, errorText);
+        
+        if (altResponse.ok) {
+          console.log('✅ Alternative function name worked!');
+          const searchData: BraveSearchResponse = await altResponse.json();
           
-          if (errorText.includes('Linked account not found')) {
-            throw new Error(`Linked account not found. Please go to https://platform.aci.dev/appconfigs/BRAVE_SEARCH and link your Brave Search account. Current linked_account_owner_id: ${linkedAccountOwnerId}`);
+          if (searchData.web && searchData.web.results) {
+            const results = searchData.web.results.slice(0, maxResults).map(result => ({
+              title: result.title || 'Kein Titel',
+              description: result.description || 'Keine Beschreibung',
+              url: result.url || ''
+            }));
+            
+            const searchResult = {
+              query,
+              results,
+              count: results.length
+            };
+            
+            const response: SearchResponse = {
+              success: true,
+              results: [searchResult],
+              totalResults: results.length,
+              linkedAccountOwnerId: linkedAccountOwnerId,
+              timestamp: new Date().toISOString()
+            };
+
+            return new Response(
+              JSON.stringify(response), 
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
           
-          throw new Error(`Search failed: HTTP ${searchResponse.status} - ${errorText}`);
-        }
-
-        const searchData: BraveSearchResponse = await searchResponse.json();
-        console.log(`✅ Search completed for "${query}"`);
-
-        // Extract and limit results
-        if (searchData.web && searchData.web.results) {
-          const results = searchData.web.results.slice(0, maxResults).map(result => ({
-            title: result.title || 'Kein Titel',
-            description: result.description || 'Keine Beschreibung',
-            url: result.url || ''
-          }));
-          
-          return {
-            query,
-            results,
-            count: results.length
+          // No results found
+          const searchResult = { query, results: [], count: 0 };
+          const response: SearchResponse = {
+            success: true,
+            results: [searchResult],
+            totalResults: 0,
+            linkedAccountOwnerId: linkedAccountOwnerId,
+            timestamp: new Date().toISOString()
           };
+
+          return new Response(
+            JSON.stringify(response), 
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } else {
+          const altErrorText = await altResponse.text();
+          console.error(`❌ Alternative function name also failed:`, altErrorText);
         }
-        
-        return { 
-          query, 
-          results: [], 
-          count: 0 
-        };
-      } catch (error) {
-        console.error(`❌ Error searching for "${query}":`, error);
-        return { 
-          query, 
-          results: [], 
-          count: 0,
-          error: error instanceof Error ? error.message : String(error) 
-        };
       }
-    });
+      
+      if (errorText.includes('Linked account not found')) {
+        throw new Error(`Linked account not found. Please go to https://platform.aci.dev/appconfigs/BRAVE_SEARCH and link your Brave Search account. Current linked_account_owner_id: ${linkedAccountOwnerId}`);
+      }
+      
+      throw new Error(`Search failed: HTTP ${searchResponse.status} - ${errorText}`);
+    }
 
-    const searchResults = await Promise.all(searchPromises);
-    
-    // Calculate total results
-    const totalResults = searchResults.reduce((sum, result) => sum + result.count, 0);
-    const successfulSearches = searchResults.filter(result => !result.error).length;
-    const failedSearches = searchResults.filter(result => result.error).length;
-    
-    console.log(`📊 Search summary: ${successfulSearches} successful, ${failedSearches} failed, ${totalResults} total results`);
+    const searchData: BraveSearchResponse = await searchResponse.json();
+    console.log(`✅ Search completed for "${query}"`);
 
+    // Extract and limit results
+    if (searchData.web && searchData.web.results) {
+      const results = searchData.web.results.slice(0, maxResults).map(result => ({
+        title: result.title || 'Kein Titel',
+        description: result.description || 'Keine Beschreibung',
+        url: result.url || ''
+      }));
+      
+      const searchResult = {
+        query,
+        results,
+        count: results.length
+      };
+      
+      console.log(`📊 Search summary: 1 successful, 0 failed, ${results.length} total results`);
+
+      const response: SearchResponse = {
+        success: true,
+        results: [searchResult],
+        totalResults: results.length,
+        linkedAccountOwnerId: linkedAccountOwnerId,
+        timestamp: new Date().toISOString()
+      };
+
+      return new Response(
+        JSON.stringify(response), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // No results found
+    const searchResult = { query, results: [], count: 0 };
+    console.log(`📊 Search summary: 1 successful, 0 failed, 0 total results`);
+    
     const response: SearchResponse = {
       success: true,
-      results: searchResults,
-      totalResults: totalResults,
+      results: [searchResult],
+      totalResults: 0,
       linkedAccountOwnerId: linkedAccountOwnerId,
       timestamp: new Date().toISOString()
     };
